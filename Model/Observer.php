@@ -157,14 +157,23 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
             return true;
         }
 
+
+        if ($this->getArg('proceed')) {
+
+            $this->unlockReltimeIndexer();
+            $this->proceedQueue();
+            $this->updateStaticCache();
+
+            return true;
+        }
+
+
+
         ini_set('display_errors', 1);
         ini_set('error_reporting', E_ALL);
         ini_set('memory_limit', '9096M');
 
         $workspacename = 'live';
-
-        $this->unlockReltimeIndexer();
-        $this->proceedQueue();
 
         $this->getBranch($workspacename);
         $this->switchBranch($workspacename);
@@ -299,6 +308,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
     public function getNodeTypeName($product)
     {
         $cat = $product->getCategoryIds();
+
         if (is_array($cat)) {
             $cat = sha1(json_encode($cat));
         }
