@@ -140,6 +140,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         }
 
         $this->index->$workspaceHash->$dimensionConfigurationHash->___keywords->$identifier = $keywordsOfNode;
+        unset($product);
 
         if ($batch == false) {
             $this->firebase->set("/lastsync/$workspacename/" . $this->branch, time());
@@ -167,10 +168,6 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
             return true;
         }
 
-
-
-        ini_set('display_errors', 1);
-        ini_set('error_reporting', E_ALL);
         ini_set('memory_limit', '9096M');
 
         $workspacename = 'live';
@@ -277,7 +274,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
 
             }
-
+            unset($attribute);
         }
 
         /* @var Mage_Catalog_Helper_Image $tn */
@@ -292,6 +289,9 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
             $data->node->properties->$k['data'] = array();
             $data->node->properties->$k['value'] = $this->_getPrice($product);
         }
+
+        @imagedestroy($tn);
+        unset($tn);
 
 
         return $data;
