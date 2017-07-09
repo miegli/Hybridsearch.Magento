@@ -9,6 +9,7 @@ use Firebase\FirebaseLib;
 class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 {
 
+    protected $imagehelper = null;
 
     /**
      * Hybridsearch_Magento_Model_Observer constructor.
@@ -28,6 +29,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $this->staticCacheDirectory = Mage::getBaseDir('base') . "/_Hybridsearch/";
         mkdir($this->temporaryDirectory, 0755, true);
         $this->additionalAttributeData = explode(",",Mage::getStoreConfig('magento/info/additionAttributeData'));
+        $this->imagehelper = Mage::helper('catalog/image');
 
     }
 
@@ -278,10 +280,20 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         }
 
         /* @var Mage_Catalog_Helper_Image $tn */
-        $tn = Mage::helper('catalog/image')->init($product, 'thumbnail')->resize(360, 360);
+
+        //$tn = $this->imagehelper->init($product, 'thumbnail')->resize(360, 360);
         $k = $this->getAttributeName("thumbnail", $product);
         if (isset($data->node->properties->$k)) {
-            $data->node->properties->$k['value'] = (string)$tn;
+
+            try {
+                $productImage = Mage::helper('catalog/image')->init($product, 'thumbnail');
+            } catch (Exception $e) {
+                $productImage = '';
+            }
+
+            if ($productImage !== '') {
+                $data->node->properties->$k['value'] = (string)$productImage;
+            }
         }
 
         $k = $this->getAttributeName("price", $product);
@@ -290,10 +302,8 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
             $data->node->properties->$k['value'] = $this->_getPrice($product);
         }
 
-        @imagedestroy($tn);
+
         unset($tn);
-
-
         return $data;
 
 
