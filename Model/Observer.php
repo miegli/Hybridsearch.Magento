@@ -20,6 +20,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $this->output = new Hybridsearch_Magento_Helper_Data();
         $this->firebase = new FirebaseLib(Mage::getStoreConfig('magento/info/endpoint'), Mage::getStoreConfig('magento/info/token'));
         $this->firebase->setTimeOut(0);
+        $this->storeid = 1;
         $this->createFullIndex = false;
         $this->branch = "master";
         $this->branchSwitch = "slave";
@@ -35,17 +36,17 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
     public function syncProduct($product, $batch = false)
     {
 
-
-        if (!$product || $product->getData('visibility') < 3) {
+        if ($product->getStatus() == 2 || $product->getData('visibility') < 3) {
             return null;
         }
 
+        $dimensionConfigurationHash = $this->storeid;
         $workspaceHash = "live";
         $workspacename = $workspaceHash;
-        $dimensionConfigurationHash = "1";
 
         $attributes = $product->getAttributes();
         $properties = array();
+
         foreach ($attributes as $attribute) {
             $properties[$attribute->getName()] = $attribute->getFrontend()->getValue($product);
         }
@@ -145,6 +146,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         }
 
         ini_set('display_errors', 1);
+        ini_set('error_reporting', E_ALL);
         ini_set('memory_limit', '9096M');
 
         $workspacename = 'live';
@@ -161,18 +163,23 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $this->firebase->set("/lastsync/$workspacename/" . $this->branch, time());
         $this->creatingFullIndex = true;
 
-        $products = Mage::getModel('catalog/product')->getCollection();
-        //$products = Mage::getModel('catalog/product')->getCollection()->setPageSize(10)->setCurPage(1);
-        $counter = 0;
-        foreach ($products as $prod) {
-            $product = Mage::getModel('catalog/product')->load($prod->getId());
-            $this->syncProduct($product, true);
-            echo $counter."\n";
-            $counter++;
-            if ($counter % 100 == 0) {
-                $this->save();
+        //$products = Mage::getModel('catalog/product')->getCollection();
+        $stores = Mage::app()->getStores();
+        foreach ($stores as $store) {
+            $this->storeid = $store->getId();
+            $products = Mage::getModel('catalog/product')->getCollection()->addStoreFilter($this->storeid)->setPageSize(3)->setCurPage(1);
+            $counter = 0;
+            foreach ($products as $prod) {
+                $product = Mage::getModel('catalog/product')->load($prod->getId());
+                $product->setStoreView($this->storeid);
+                $this->syncProduct($product, true);
+                $counter++;
+                if ($counter % 250 == 0) {
+                    $this->save();
+                }
             }
         }
+
 
         $this->save();
         $this->unlockReltimeIndexer();
@@ -210,22 +217,44 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $data->nodeType = $this->getNodeTypeName($product);
         $data->identifier = $product->getId();
         $data->node->identifier = $product->getId();
-        $data->node->uri = (parse_url($product->getUrlModel()->getUrl($product)));
-        $data->node->url = $product->getUrlModel()->getUrl($product);
+        $data->node->url = $this->_getUrl($product);
+        $data->node->uri = parse_url($data->node->url);
         $data->node->nodeType = $data->nodeType;
         $data->node->breadcrumb = $product->getUrlModel()->getUrl($product);
         $data->node->hash = $product->getId();
         $data->node->properties = new \stdClass();
         $data->node->properties->_nodeLabel = $product->getName();
-        $tn = Mage::helper('catalog/image')->init($product, 'thumbnail')->resize(50, 50);
-        if (strlen($tn) > 15) {
-            $data->node->properties->thumbnail = $tn;
-        }
+
+
+        $whiteListAttributes = array("thumbnail" => true, "shortdescription" => true);
+
 
         foreach ($product->getAttributes() as $attribute) {
-            $k = $this->getAttributeName($attribute, $product);
-            $data->node->properties->$k = $attribute->getFrontend()->getValue($product);
+            /* @var Mage_Catalog_Model_Entity_Attribute $attribute */
+
+            if (isset($whiteListAttributes[$attribute->getAttributeCode()]) || $attribute->getIsSearchable() || $attribute->getIsComparable() || $attribute->getIsFilterable()) {
+                $k = $this->getAttributeName($attribute, $product);
+                $data->node->properties->$k = array(
+                    'data' => $attribute->getData(),
+                    'value' => $attribute->getFrontend()->getValue($product)
+                );
+            }
+
         }
+
+        /* @var Mage_Catalog_Helper_Image $tn */
+        $tn = Mage::helper('catalog/image')->init($product, 'thumbnail')->resize(50, 50);
+        $k = $this->getAttributeName("thumbnail", $product);
+        if (isset($data->node->properties->$k)) {
+            $data->node->properties->$k['value'] = (string)$tn;
+        }
+
+        $k = $this->getAttributeName("price", $product);
+        if (isset($data->node->properties->$k)) {
+            $data->node->properties->$k['data'] = array();
+            $data->node->properties->$k['value'] = $this->_getPrice($product);
+        }
+
 
         return $data;
 
@@ -251,7 +280,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
      */
     public function getAttributeName($attribute, $product)
     {
-        return mb_strtolower(preg_replace("/[^A-z0-9]/", "-", $this->getNodeTypeName($product) . "-" . $attribute->getName()));
+        return mb_strtolower(preg_replace("/[^A-z0-9]/", "-", $this->getNodeTypeName($product) . "-" . (is_string($attribute) ? $attribute : $attribute->getName())));
     }
 
 
@@ -266,6 +295,47 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         return 'default';
 
 
+    }
+
+
+    /**
+     * get product url
+     * @return string
+     */
+    protected function _getUrl($product)
+    {
+        return $product->setStoreId($this->storeid)->getProductUrl();
+
+    }
+
+    /**
+     * get product price
+     * @return double
+     */
+    protected function _getPrice($product)
+    {
+        $price = 0;
+
+        if ($product->getTypeId() == 'grouped') {
+            $this->output->prepareGroupedProductPrice($product);
+            $_minimalPriceValue = $product->getPrice();
+            if ($_minimalPriceValue) {
+                $price = $_minimalPriceValue;
+            }
+        } elseif ($product->getTypeId() == 'bundle') {
+            if (!$product->getFinalPrice()) {
+                $price = $this->output->getBundlePrice($product);
+            } else {
+                $price = $product->getFinalPrice();
+            }
+        } else {
+            $price = $product->getFinalPrice();
+        }
+        if (!$price) {
+            $price = 0;
+        }
+
+        return $price;
     }
 
     /**
