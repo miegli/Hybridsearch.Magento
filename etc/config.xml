@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Hybridseach_Magento>
+            <version>0.0.1</version>
+        </Hybridseach_Magento>
+    </modules>
+    <global>
+        <helpers>
+            <magento>
+                <class>Hybridsearch_Magento_Helper</class>
+            </magento>
+        </helpers>
+        <models>
+            <hybridsearch_magento>
+                <class>Hybridsearch_Magento_Model</class>
+            </hybridsearch_magento>
+        </models>
+        <events>
+            <after_reindex_process_catalogsearch_fulltext>
+                <observers>
+                    <hybridsearch_magento>
+                        <class>hybridsearch_magento/observer</class>
+                        <method>syncAll</method>
+                        <type>singleton</type>
+                    </hybridsearch_magento>
+                </observers>
+            </after_reindex_process_catalogsearch_fulltext>
+        </events>
+    </global>
+</config>

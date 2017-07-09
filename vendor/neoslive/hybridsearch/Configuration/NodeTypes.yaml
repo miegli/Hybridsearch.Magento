@@ -1,0 +1,28 @@
+'Neoslive.Hybridsearch:Content':
+  abstract: TRUE
+  hybridsearch:
+    render: false
+  ui:
+    inspector:
+      groups:
+        hybridsearch:
+          label: 'Hybrid Search'
+  properties:
+    neoslivehybridsearchrealtime:
+      type: boolean
+    neoslivehybridsearchkeywords:
+      type: string
+      ui:
+        reloadIfChanged: false
+        label: Keywords
+        inspector:
+          group: hybridsearch
+          editor: Neos.Neos/Inspector/Editors/TextAreaEditor
+          editorOptions:
+            rows: 7
+    neoslivehybridsearchturbonode:
+      type: boolean
+      ui:
+        label: 'Turbo Node'
+        inspector:
+          group: hybridsearch

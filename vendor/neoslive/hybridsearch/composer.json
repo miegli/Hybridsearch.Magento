@@ -1,0 +1,18 @@
+{
+    "description": "Add description here",
+    "type": "neos-package",
+    "require": {
+        "ktamas77/firebase-php": "*",
+        "neitanod/forceutf8": "*",
+        "google/apiclient": "*",
+        "algolia/algoliasearch-client-php": "*",
+        "ramsey/uuid": "^3.0.0",
+        "symfony/console": "*"
+    },
+    "name": "neoslive/hybridsearch",
+    "autoload": {
+        "psr-0": {
+            "Neoslive\\Hybridsearch": "Classes/"
+        }
+    }
+}

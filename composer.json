@@ -1,0 +1,7 @@
+{
+    "description": "Add description here",
+    "require": {
+        "neoslive/hybridsearch": "*"
+    },
+    "name": "hybridsearch/magento"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "hybridsearch",
+  "dependencies": {
+    "firebase": "*",
+    "angular-sanitize": "1.6.0",
+    "elasticlunr.js": "*",
+    "algoliasearch": "*"
+  }
+}

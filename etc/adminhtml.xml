@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * @category  hybridsearch_magento
+ */
+-->
+<config>
+    <acl>
+        <resources>
+            <admin>
+                <children>
+                    <system>
+                        <children>
+                            <magento>
+                                <children>
+                                    <info translate="title" module="magento">
+                                        <title>Information</title>
+                                        <sort_order>10</sort_order>
+                                    </info>
+                                </children>
+                            </magento>
+                            <config>
+                                <children>
+                                    <magento translate="title">
+                                        <title>Hybridseach</title>
+                                        <sort_order>30</sort_order>
+                                    </magento>
+                                </children>
+                            </config>
+                        </children>
+                    </system>
+                </children>
+            </admin>
+        </resources>
+    </acl>
+</config>
