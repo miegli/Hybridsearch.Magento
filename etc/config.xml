@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <config>
     <modules>
-        <Hybridseach_Magento>
-            <version>0.0.1</version>
-        </Hybridseach_Magento>
+        <Hybridsearch_Magento>
+            <version>1.0.0</version>
+        </Hybridsearch_Magento>
     </modules>
     <global>
         <helpers>

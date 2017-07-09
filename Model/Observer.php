@@ -286,7 +286,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         if (isset($data->node->properties->$k)) {
 
             try {
-                $productImage = Mage::helper('catalog/image')->init($product, 'thumbnail');
+                $productImage = Mage::helper('catalog/image')->init($product, 'small_image');
             } catch (Exception $e) {
                 $productImage = '';
             }
