@@ -251,6 +251,12 @@ class SearchIndexFactory
      */
     protected $temporaryDirectory;
 
+
+    /**
+     * @var string
+     */
+    protected $staticCacheDirectory;
+
     /**
      * @var string
      */
@@ -338,7 +344,9 @@ class SearchIndexFactory
 
         if (!is_writable($temporaryDirectory)) {
             try {
-                \Neos\Utility\Files::createDirectoryRecursively($temporaryDirectory);
+                if (!is_dir($temporaryDirectory)) {
+                    mkdir($temporaryDirectory, 0755, true);
+                }
             } catch (\Neos\Flow\Utility\Exception $exception) {
                 throw new Exception('The temporary directory "' . $temporaryDirectory . '" could not be created.', 1264426237);
             }
@@ -351,6 +359,7 @@ class SearchIndexFactory
         }
 
         $this->temporaryDirectory = $temporaryDirectory;
+        $this->staticCacheDirectory = $this->temporaryDirectory. "../../../../Web/_Hybridsearch";
         $this->queuecounter = 100000000;
         $this->allSiteKeys = array();
         $this->index = new \stdClass();
@@ -438,16 +447,19 @@ class SearchIndexFactory
     public function updateStaticCache()
     {
 
-        $this->output = new ConsoleOutput();
+        if (isset($this->output) == false) {
+            $this->output = new ConsoleOutput();
+        }
 
         $this->output->outputLine('creating static cache');
 
-        $targetPath = $this->temporaryDirectory . "../../../../Web/_Hybridsearch";
-
+        $targetPath = $this->staticCacheDirectory;
 
         if (!is_writable($targetPath)) {
             try {
-                \Neos\Utility\Files::createDirectoryRecursively($targetPath);
+                if (!is_dir($targetPath)) {
+                    mkdir($targetPath, 0755, true);
+                }
             } catch (\Neos\Flow\Utility\Exception $exception) {
                 throw new Exception('The directory "' . $targetPath . '" could not be created.', 1264426237);
             }
@@ -484,12 +496,15 @@ class SearchIndexFactory
                             $targetSubPath = $targetPath . "/sites/$sitekey/index/$workspacename/$branch/$dimension";
 
                             try {
-                                \Neos\Utility\Files::createDirectoryRecursively($targetSubPath);
+                                if (!is_dir($targetSubPath)) {
+                                    mkdir($targetSubPath, 0755, true);
+                                }
                             } catch (\Neos\Flow\Utility\Exception $exception) {
                                 throw new Exception('The  directory "' . $targetSubPath . '" could not be created.', 1264426237);
                             }
 
                             if (is_dir($targetSubPath)) {
+                                $nodetype = str_replace("__","",$nodetype);
                                 $fp = fopen($targetSubPath . "/__" . $nodetype . ".json", 'w+');
                                 $this->fwrite_stream($fp, $this->firebase->get("sites/$sitekey/index/$workspacename/$branch/$dimension/__$nodetype"));
                                 fclose($fp);
@@ -1900,7 +1915,7 @@ class SearchIndexFactory
      * @param array $dimensionConfiguration
      * @return string
      */
-    public 
+    public
     function getDimensionConfiugurationHash($dimensionConfiguration)
     {
 
@@ -1914,7 +1929,7 @@ class SearchIndexFactory
      * @param Workspace $workspace
      * @return string
      */
-    public 
+    public
     function getWorkspaceHash($workspace)
     {
 
@@ -2463,7 +2478,7 @@ class SearchIndexFactory
      * @param html to raw text
      * @return string
      */
-    public 
+    public
     function rawcontent($text)
     {
         return preg_replace("[^A-z]", "  ", preg_replace("/[ ]{2,}/", " ", preg_replace("/\r|\n/", " ", strip_tags($text))));
@@ -2542,7 +2557,7 @@ class SearchIndexFactory
      * @param string page|breadcrumb
      * @return string
      */
-    public 
+    public
     function getRenderedNode($node, $typoscriptPath = 'page')
     {
 
@@ -2612,7 +2627,7 @@ class SearchIndexFactory
      * @return FusionView
      * @throws Exception
      */
-    public 
+    public
     function getView()
     {
 
@@ -2669,7 +2684,7 @@ class SearchIndexFactory
      * Return all allowed dimension combinations
      * @return array
      */
-    public 
+    public
     function getAllDimensionCombinations()
     {
 
@@ -2689,7 +2704,7 @@ class SearchIndexFactory
      * @param int $decimals
      * @return string
      */
-    public 
+    public
     function human_filesize($bytes, $decimals = 2)
     {
         $sz = 'BKMGTP';
@@ -2702,7 +2717,7 @@ class SearchIndexFactory
      * @param $array
      * @return array
      */
-    public 
+    public
     function array_keys_multi(array $array)
     {
         $keys = array();
@@ -2722,7 +2737,7 @@ class SearchIndexFactory
      * get db identifier for current site
      * @return string
      */
-    public 
+    public
     function getSiteIdentifier()
     {
 

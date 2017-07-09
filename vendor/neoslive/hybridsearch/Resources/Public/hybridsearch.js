@@ -39,9 +39,9 @@
      * @module Angular main module
      * @returns {hybridsearch}
      */
-    angular.module('hybridsearch').factory('$hybridsearch', ['$hybridsearchObject', '$cookies',
+    angular.module('hybridsearch').factory('$hybridsearch', ['$hybridsearchObject',
 
-        function ($hybridsearchObject, $cookies) {
+        function ($hybridsearchObject) {
 
             /**
              * @class Hybridsearch
@@ -5081,6 +5081,15 @@
                  */
                 getProperty: function (property) {
                     return this._nodes[0].getProperty(property);
+
+                },
+
+                /**
+                 * Get properties of group.
+                 * @returns array
+                 */
+                getProperties: function () {
+                    return this._nodes[0].getProperties();
 
                 },
 
