@@ -180,6 +180,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
                 $this->syncProduct($product, true);
                 $counter++;
                 if ($counter % 250 == 0) {
+                    sleep(10);
                     $this->save();
                 }
             }
@@ -246,6 +247,8 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
                 }
                 $data->node->properties->$k = array(
                     'data' => $attributeData,
+                    'comparable' => $attribute->getIsComparable(),
+                    'visible' => $attribute->getIsVisibleOnFront(),
                     'label' => (isset($labels[$this->storeid]) ? $labels[$this->storeid] : $attribute->getStoreLabel()),
                     'value' => $attribute->getFrontend()->getValue($product)
                 );
