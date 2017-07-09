@@ -281,7 +281,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         }
 
         /* @var Mage_Catalog_Helper_Image $tn */
-        $tn = Mage::helper('catalog/image')->init($product, 'thumbnail')->resize(50, 50);
+        $tn = Mage::helper('catalog/image')->init($product, 'thumbnail')->resize(360, 360);
         $k = $this->getAttributeName("thumbnail", $product);
         if (isset($data->node->properties->$k)) {
             $data->node->properties->$k['value'] = (string)$tn;
