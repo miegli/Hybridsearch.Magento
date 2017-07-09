@@ -26,6 +26,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $this->branchSwitch = "slave";
         $this->temporaryDirectory = Mage::getBaseDir('cache') . "/hybridsearch/";
         mkdir($this->temporaryDirectory, 0755, true);
+        $this->additionalAttributeData = array('unit');
 
     }
 
@@ -44,7 +45,10 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $workspaceHash = "live";
         $workspacename = $workspaceHash;
 
+        Mage::app()->setCurrentStore($this->storeid);
+        $product->setStoreView($this->storeid);
         $attributes = $product->getAttributes();
+
         $properties = array();
 
         foreach ($attributes as $attribute) {
@@ -165,13 +169,14 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
         //$products = Mage::getModel('catalog/product')->getCollection();
         $stores = Mage::app()->getStores();
+
         foreach ($stores as $store) {
             $this->storeid = $store->getId();
-            $products = Mage::getModel('catalog/product')->getCollection()->addStoreFilter($this->storeid)->setPageSize(3)->setCurPage(1);
+            Mage::app()->setCurrentStore($this->storeid);
+            $products = Mage::getModel('catalog/product')->getCollection()->addStoreFilter($this->storeid);
             $counter = 0;
             foreach ($products as $prod) {
                 $product = Mage::getModel('catalog/product')->load($prod->getId());
-                $product->setStoreView($this->storeid);
                 $this->syncProduct($product, true);
                 $counter++;
                 if ($counter % 250 == 0) {
@@ -225,19 +230,27 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $data->node->properties = new \stdClass();
         $data->node->properties->_nodeLabel = $product->getName();
 
-
         $whiteListAttributes = array("thumbnail" => true, "shortdescription" => true);
-
 
         foreach ($product->getAttributes() as $attribute) {
             /* @var Mage_Catalog_Model_Entity_Attribute $attribute */
-
             if (isset($whiteListAttributes[$attribute->getAttributeCode()]) || $attribute->getIsSearchable() || $attribute->getIsComparable() || $attribute->getIsFilterable()) {
                 $k = $this->getAttributeName($attribute, $product);
+                $attribute->setStoreId($this->storeid);
+                $labels = $attribute->getStoreLabels();
+                $attributeData = array();
+                foreach ($this->additionalAttributeData as $d) {
+                    if ($attribute->getData($d)) {
+                        $attributeData[$d] = $attribute->getData($d);
+                    }
+                }
                 $data->node->properties->$k = array(
-                    'data' => $attribute->getData(),
+                    'data' => $attributeData,
+                    'label' => (isset($labels[$this->storeid]) ? $labels[$this->storeid] : $attribute->getStoreLabel()),
                     'value' => $attribute->getFrontend()->getValue($product)
                 );
+
+
             }
 
         }
