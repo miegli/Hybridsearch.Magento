@@ -40,6 +40,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
     public function syncProduct($product, $batch = false)
     {
 
+
         if ($product->getStatus() == 2 || $product->getData('visibility') < 3) {
             return null;
         }
@@ -142,7 +143,9 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         }
 
         $this->index->$workspaceHash->$dimensionConfigurationHash->___keywords->$identifier = $keywordsOfNode;
+        $product->clearInstance();
         unset($product);
+        gc_collect_cycles();
 
         if ($batch == false) {
             $this->firebase->set("/lastsync/$workspacename/" . $this->branch, time());
@@ -155,6 +158,8 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
     public function syncAll()
     {
+
+        //ini_set("memory_limit",-1);
 
         if (!$this->getArg('hybridsearch')) {
             return true;
@@ -189,18 +194,18 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         foreach ($stores as $store) {
             $this->storeid = $store->getId();
             Mage::app()->setCurrentStore($this->storeid);
-            $products = Mage::getModel('catalog/product')->getCollection()->addStoreFilter($this->storeid);
+            $products = Mage::getSingleton('catalog/product')->getCollection()->addStoreFilter($this->storeid);
 
             $counter = 0;
             foreach ($products as $prod) {
-                $product = Mage::getModel('catalog/product')->load($prod->getId());
+                $product = Mage::getSingleton('catalog/product')->load($prod->getId());
                 $this->syncProduct($product, true);
-
                 $counter++;
-                if ($counter % 250 == 0) {
+                if ($counter % 100 == 0) {
                     $this->save();
                 }
             }
+            unset($products);
         }
 
 
@@ -279,27 +284,20 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         }
 
 
+
         $k = $this->getAttributeName("thumbnail", $product);
         if (isset($data->node->properties->$k)) {
 
-            try {
-                $productImage = Mage::helper('catalog/image')->init($product, 'small_image');
-            } catch (Exception $e) {
-                $productImage = '';
-            }
+            $productImage = (string)$this->imagehelper->init($product, 'small_image')->resize(360);
 
-            if ($productImage == '') {
-                try {
-                    $productImage = (string)$this->imagehelper->init($product, 'thumbnail')->resize(360, 360);
-                } catch (Exception $e) {
-                    $productImage = '';
-                }
-            }
 
             if ($productImage !== '') {
                 $data->node->properties->$k['value'] = (string)$productImage;
             }
+
+
         }
+
 
         $k = $this->getAttributeName("price", $product);
         if (isset($data->node->properties->$k)) {
@@ -308,7 +306,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         }
 
 
-        unset($tn);
+
         return $data;
 
 
