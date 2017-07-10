@@ -22,7 +22,7 @@
                             <config>
                                 <children>
                                     <magento translate="title">
-                                        <title>Hybridseach</title>
+                                        <title>Hybridsearch</title>
                                         <sort_order>30</sort_order>
                                     </magento>
                                 </children>
