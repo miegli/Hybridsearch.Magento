@@ -16,6 +16,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
      */
     public function __construct()
     {
+        ini_set("memory_limit",-1);
         Mage::getConfig()->loadModules();
 
         $this->output = new Hybridsearch_Magento_Helper_Data();
@@ -159,7 +160,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
     public function syncAll()
     {
 
-        //ini_set("memory_limit",-1);
+
 
         if (!$this->getArg('hybridsearch')) {
             return true;
@@ -201,7 +202,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
                 $product = Mage::getSingleton('catalog/product')->load($prod->getId());
                 $this->syncProduct($product, true);
                 $counter++;
-                if ($counter % 100 == 0) {
+                if ($counter % 200 == 0) {
                     $this->save();
                 }
             }
@@ -289,7 +290,6 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         if (isset($data->node->properties->$k)) {
 
             $productImage = (string)$this->imagehelper->init($product, 'small_image')->resize(360);
-
 
             if ($productImage !== '') {
                 $data->node->properties->$k['value'] = (string)$productImage;
