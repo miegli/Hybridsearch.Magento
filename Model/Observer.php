@@ -9,6 +9,7 @@ use Firebase\FirebaseLib;
 class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 {
 
+    protected $imagehelper = null;
 
     /**
      * Hybridsearch_Magento_Model_Observer constructor.
@@ -25,8 +26,10 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $this->branch = "master";
         $this->branchSwitch = "slave";
         $this->temporaryDirectory = Mage::getBaseDir('cache') . "/hybridsearch/";
+        $this->staticCacheDirectory = Mage::getBaseDir('base') . "/_Hybridsearch/";
         mkdir($this->temporaryDirectory, 0755, true);
-        $this->additionalAttributeData = array('unit');
+        $this->additionalAttributeData = explode(",", Mage::getStoreConfig('magento/info/additionAttributeData'));
+        $this->imagehelper = Mage::helper('catalog/image');
 
     }
 
@@ -80,6 +83,13 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $identifier = $indexData->identifier;
         $nt = "__" . $this->getNodeTypeName($product);
 
+
+        if (isset($this->nodetypes->$nt)) {
+            $this->nodetypes->$nt++;
+        } else {
+            $this->nodetypes->$nt = 1;
+        }
+
         $keywords->$nt = true;
 
 
@@ -132,6 +142,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         }
 
         $this->index->$workspaceHash->$dimensionConfigurationHash->___keywords->$identifier = $keywordsOfNode;
+        unset($product);
 
         if ($batch == false) {
             $this->firebase->set("/lastsync/$workspacename/" . $this->branch, time());
@@ -149,14 +160,18 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
             return true;
         }
 
-        ini_set('display_errors', 1);
-        ini_set('error_reporting', E_ALL);
-        ini_set('memory_limit', '9096M');
+
+        if ($this->getArg('proceed')) {
+
+            $this->unlockReltimeIndexer();
+            $this->proceedQueue();
+            $this->updateStaticCache();
+
+            return true;
+        }
+
 
         $workspacename = 'live';
-
-        $this->unlockReltimeIndexer();
-        $this->proceedQueue();
 
         $this->getBranch($workspacename);
         $this->switchBranch($workspacename);
@@ -167,20 +182,22 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $this->firebase->set("/lastsync/$workspacename/" . $this->branch, time());
         $this->creatingFullIndex = true;
 
-        //$products = Mage::getModel('catalog/product')->getCollection();
+
         $stores = Mage::app()->getStores();
+
 
         foreach ($stores as $store) {
             $this->storeid = $store->getId();
             Mage::app()->setCurrentStore($this->storeid);
             $products = Mage::getModel('catalog/product')->getCollection()->addStoreFilter($this->storeid);
+
             $counter = 0;
             foreach ($products as $prod) {
                 $product = Mage::getModel('catalog/product')->load($prod->getId());
                 $this->syncProduct($product, true);
+
                 $counter++;
                 if ($counter % 250 == 0) {
-                    sleep(10);
                     $this->save();
                 }
             }
@@ -190,6 +207,9 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $this->save();
         $this->unlockReltimeIndexer();
         $this->proceedQueue();
+
+        // create static file cache
+        $this->updateStaticCache();
 
         // remove old sites data
         $this->switchBranch($workspacename);
@@ -255,14 +275,30 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
 
             }
-
+            unset($attribute);
         }
 
-        /* @var Mage_Catalog_Helper_Image $tn */
-        $tn = Mage::helper('catalog/image')->init($product, 'thumbnail')->resize(50, 50);
+
         $k = $this->getAttributeName("thumbnail", $product);
         if (isset($data->node->properties->$k)) {
-            $data->node->properties->$k['value'] = (string)$tn;
+
+            try {
+                $productImage = Mage::helper('catalog/image')->init($product, 'small_image');
+            } catch (Exception $e) {
+                $productImage = '';
+            }
+
+            if ($productImage == '') {
+                try {
+                    $productImage = (string)$this->imagehelper->init($product, 'thumbnail')->resize(360, 360);
+                } catch (Exception $e) {
+                    $productImage = '';
+                }
+            }
+
+            if ($productImage !== '') {
+                $data->node->properties->$k['value'] = (string)$productImage;
+            }
         }
 
         $k = $this->getAttributeName("price", $product);
@@ -272,6 +308,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         }
 
 
+        unset($tn);
         return $data;
 
 
@@ -285,7 +322,16 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
      */
     public function getNodeTypeName($product)
     {
-        return mb_strtolower(preg_replace("/[^A-z0-9]/", "-", "product-" . $product->getDefaultAttributeSetId()));
+        $cat = $product->getCategoryIds();
+
+        if (is_array($cat)) {
+            $cat = sha1(json_encode($cat));
+        }
+        if (!$cat) {
+            $cat = 0;
+        }
+
+        return mb_strtolower(preg_replace("/[^A-z0-9]/", "-", "product-" . ($cat) . "-" . $product->getAttributeSetId()));
     }
 
     /**
