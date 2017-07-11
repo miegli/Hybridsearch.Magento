@@ -18,7 +18,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
     {
 
         Mage::getConfig()->loadModules();
-
+        ini_set('memory_limit', '128000M');
         $this->output = new Hybridsearch_Magento_Helper_Data();
         $this->firebase = new FirebaseLib(Mage::getStoreConfig('magento/info/endpoint'), Mage::getStoreConfig('magento/info/token'));
         $this->firebase->setTimeOut(0);
@@ -291,7 +291,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
             /* @var Mage_Catalog_Helper_Image $img */
             $img = Mage::helper('catalog/image');
 
-            $productImage = (string)$img->init($product, 'small_image')->resize(360);
+            $productImage = Mage::getModel('catalog/product_media_config')->getMediaUrl( $product->getThumbnail());
 
 
             if ($productImage !== '') {

@@ -1344,7 +1344,7 @@ class SearchIndexFactory
 
 
                 if (substr($k, 0, 2) !== "__") {
-                    array_push($keywordsOfNode, $k);
+                      array_push($keywordsOfNode, $k);
                 }
 
                 if (substr($k, 0, 9) === "_nodetype") {
@@ -1448,19 +1448,19 @@ class SearchIndexFactory
         }
 
         $text = (Encoding::UTF8FixWin1252Chars(html_entity_decode($text)));
-        $text = preg_replace('~[^\p{L}\p{N}-]++~u', " ", mb_strtolower($text));
+        $text = preg_replace('~[^\p{L}\p{N}-\.0-9]++~u', " ", mb_strtolower($text));
         $words = explode(" ", ($text));
-
 
         // reduce
         $wordsReduced = array();
 
-
         foreach ($words as $w) {
+
 
             if (strlen($w) > 1) {
                 $wm = $this->getMetaphone($w);
-                if (strlen($wm) > 0) {
+                $w = str_replace(".","",$w);
+                if (strlen($wm) > 0 && strlen($wm) < 64) {
                     $wordsReduced[$wm][$w] = 1;
                     $wm = $this->getMetaphone(mb_substr($w, 0, 3));
                     if (strlen($wm) > 0) {
@@ -1482,11 +1482,8 @@ class SearchIndexFactory
             }
         }
 
-
         $properties = null;
         unset($properties);
-
-
 
         return $keywords;
 
@@ -1498,40 +1495,18 @@ class SearchIndexFactory
      * @param string $string
      * @return string
      */
-    public  function getMetaphone($string)
+    public function getMetaphone($string)
     {
 
-
         if (is_numeric($string)) {
-            return $string;
+            return str_replace((string)$string,".","");
         }
 
-        return mb_strtoupper(metaphone(mb_strtolower($string), 6));
-
-
-        if (strlen($metaphone) > 7) {
-            $metaphone = mb_substr($metaphone, 0, strlen($metaphone) - 2);
+        if (substr_count($string,".") && substr($string,-1,1) !== '.' && is_numeric(substr($string,0,1))) {
+            return mb_strtoupper(str_replace(".","",$string));
         }
 
-
-        if (strlen($metaphone) == 0 || $metaphone === 0) {
-            return mb_strtolower($string);
-        }
-
-
-        if (strlen($metaphone) < 4) {
-            $metaphone = mb_substr($string, 0, 1) . $metaphone;
-        }
-
-        if (strlen($metaphone) < 4) {
-            $metaphone = mb_substr(mb_strtoupper($string), 0, 3) . $metaphone;
-        }
-
-
-        $metaphone = mb_strtoupper(utf8_encode(preg_replace('/[^\w]/i', '0', utf8_decode($metaphone))));
-
-
-        return $metaphone;
+        return mb_strtoupper(metaphone(mb_strtolower(str_replace($string,".","")), 6));
 
 
     }
@@ -2334,6 +2309,8 @@ class SearchIndexFactory
                 }
             }
         }
+
+
 
         foreach ($this->keywords as $workspace => $workspaceData) {
 

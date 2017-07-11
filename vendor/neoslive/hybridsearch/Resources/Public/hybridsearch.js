@@ -1279,7 +1279,7 @@
                             if (self.getFilter().getNodeType() == 'string' && found == 1) {
                                 return true
                             } else {
-                                if (self.getFilter().getNodeType().length == found) {
+                                if (found > 0 && self.getFilter().getNodeType().length == found) {
                                     return true;
                                 }
                             }
@@ -2309,8 +2309,6 @@
                                         });
 
 
-
-
                                         resultsSearch[0] = lunrSearch.search(customquery == undefined ? self.getFilter().getQuery() : customquery, {
                                             fields: fields,
                                             bool: "AND",
@@ -2450,7 +2448,6 @@
 
                                                 }
                                             );
-
 
 
                                         }
@@ -3005,7 +3002,9 @@
                                 var searchIndex = new this.SearchIndexInstance(self, keywords);
                                 window.clearTimeout(getIndexTimeout);
                                 getIndexTimeout = window.setTimeout(function () {
+
                                     lastSearchInstance = searchIndex.getIndex();
+
                                     var counter = 0;
 
                                     searchInstancesInterval = setInterval(function () {
@@ -3237,12 +3236,18 @@
                                     };
 
 
+                                    if (uniquarrayfinal === undefined) {
+                                        var uniquarrayfinal = [null];
+                                    }
+
                                     clearTimeout(self.getIndexInterval());
 
                                     angular.forEach(uniquarrayfinal, function (keyword) {
 
                                         var refs = self.getIndex(keyword);
-
+                                        if (refs !== undefined && refs && refs.length == undefined) {
+                                            var refs = [refs];
+                                        }
 
                                         if (refs !== null && refs.length) {
                                             angular.forEach(refs, function (ref) {
@@ -3310,7 +3315,10 @@
 
 
                                                                         if (isstaticcached == false) {
+
+
                                                                             angular.forEach(groupedByNodeType, function (group, nodetype) {
+
 
                                                                                 // fetch all nodes content
                                                                                 if (self.getConfig('cache')) {
@@ -3617,7 +3625,12 @@
                     getMetaphone: function (querysegment) {
 
                         querysegment = this.getEmoijQuery(querysegment);
-                        var m = metaphone(querysegment.toLowerCase(), 6).toUpperCase();
+
+                        if (querysegment.indexOf(".") && querysegment.substr(-1,1) !== '.' && isNaN(querysegment.substr(0,1)) === false) {
+                            return String(querysegment).replace(/\./g,"").toUpperCase();
+                        }
+
+                        var m = metaphone(querysegment.toLowerCase(), 6).toUpperCase().replace(/\./g,"");
 
                         return m.length > 0 ? m : null;
 
@@ -3642,10 +3655,12 @@
                         }
 
                         var q = self.getMetaphone(querysegment);
+
                         if (!q) {
                             return self;
                         }
-                        var qfallback = "000" + self.getMetaphone(querysegment.substr(0, 3));
+                        var qf = self.getMetaphone(querysegment.substr(0, 3));
+                        var qfallback = qf ? "000" + qf : null;
 
                         instance.$$data.running++;
 
@@ -3655,10 +3670,12 @@
 
                         instance.$$data.keywords.push({term: q, metaphone: q});
 
-                        ref.socketAutocomplete = hybridsearch.$firebase().database().ref("sites/" + hybridsearch.$$conf.site + "/" + "keywords/" + hybridsearch.$$conf.workspace + "/" + hybridsearch.$$conf.branch + "/" + hybridsearch.$$conf.dimension + "/" + qfallback);
-                        ref.socketAutocomplete.once("value", function (data) {
-                            self.setAutocomplete(data.val(), querysegment);
-                        });
+                        if (qfallback) {
+                            ref.socketAutocomplete = hybridsearch.$firebase().database().ref("sites/" + hybridsearch.$$conf.site + "/" + "keywords/" + hybridsearch.$$conf.workspace + "/" + hybridsearch.$$conf.branch + "/" + hybridsearch.$$conf.dimension + "/" + qfallback);
+                            ref.socketAutocomplete.once("value", function (data) {
+                                self.setAutocomplete(data.val(), querysegment);
+                            });
+                        }
 
 
                         ref.socket.once("value", function (data) {
@@ -3692,14 +3709,41 @@
                         var self = this;
                         var queries = [];
 
-                        if (nodeType !== undefined) {
 
-                            var query = {
-                                isLoadingAllFromNodeType: true,
-                                socket: hybridsearch.$firebase().database().ref("sites/" + hybridsearch.$$conf.site + "/" + "index/" + hybridsearch.$$conf.workspace + "/" + hybridsearch.$$conf.branch + "/" + hybridsearch.$$conf.dimension + "/__" + nodeType),
-                                http: (self.getConfig('cache') ? (hybridsearch.$$conf.cdnStaticURL == undefined ? '/_Hybridsearch' : hybridsearch.$$conf.cdnStaticURL + '/_Hybridsearch') : (hybridsearch.$$conf.cdnDatabaseURL == undefined ? hybridsearch.$$conf.databaseURL : hybridsearch.$$conf.cdnDatabaseURL)) + "/sites/" + hybridsearch.$$conf.site + "/" + "index/" + hybridsearch.$$conf.workspace + "/" + hybridsearch.$$conf.branch + "/" + hybridsearch.$$conf.dimension + "/__" + nodeType + ".json" + (self.getConfig('cache') ? "?ls=" + hybridsearch.getLastSync() : "")
-                            };
-                            return query;
+                        if (nodeType !== undefined || (nodeType == undefined && keyword === null)) {
+
+                            var nodetypes = [];
+
+                            if (keyword == null && nodeType == undefined && typeof this.getFilter().getNodeType() == 'object') {
+                                angular.forEach(this.getFilter().getNodeType(), function (nodeType) {
+                                    if (typeof nodeType == 'string') {
+                                        nodetypes.push(nodeType);
+                                    }
+                                });
+                            } else {
+                                var n = nodeType !== undefined ? nodeType : this.getFilter().getNodeType();
+                                if (typeof n == 'string') {
+                                    nodetypes.push(n);
+                                }
+                            }
+
+                            angular.forEach(nodetypes, function (nodeType) {
+
+                                if (nodeType !== undefined) {
+                                    var query = {
+                                        isLoadingAllFromNodeType: true,
+                                        socket: hybridsearch.$firebase().database().ref("sites/" + hybridsearch.$$conf.site + "/" + "index/" + hybridsearch.$$conf.workspace + "/" + hybridsearch.$$conf.branch + "/" + hybridsearch.$$conf.dimension + "/__" + nodeType),
+                                        http: (self.getConfig('cache') ? (hybridsearch.$$conf.cdnStaticURL == undefined ? '/_Hybridsearch' : hybridsearch.$$conf.cdnStaticURL + '/_Hybridsearch') : (hybridsearch.$$conf.cdnDatabaseURL == undefined ? hybridsearch.$$conf.databaseURL : hybridsearch.$$conf.cdnDatabaseURL)) + "/sites/" + hybridsearch.$$conf.site + "/" + "index/" + hybridsearch.$$conf.workspace + "/" + hybridsearch.$$conf.branch + "/" + hybridsearch.$$conf.dimension + "/__" + nodeType + ".json" + (self.getConfig('cache') ? "?ls=" + hybridsearch.getLastSync() : "")
+                                    };
+                                    queries.push(query);
+                                }
+                            });
+
+                            if (queries.length == 1) {
+                                return queries[0];
+                            }
+
+                            return queries;
 
                         }
 
@@ -4015,13 +4059,18 @@
                                                     }
                                                 });
                                             } else {
+
                                                 angular.forEach(value.node.properties, function (propvalue, property) {
                                                     var boost = self.getBoost(property, value.node.nodeType);
+
                                                     if (boost > 10) {
                                                         if (typeof propvalue == 'string') {
                                                             if (propvalue.indexOf(query) == 0) {
                                                                 doc[property] = propvalue.substr(0, 1024);
                                                             }
+                                                        } else {
+                                                            doc[property] = JSON.stringify(propvalue).toLowerCase().substr(0, 1024);
+
                                                         }
                                                     }
                                                 });
@@ -4103,7 +4152,6 @@
 
                                             doc.id = value.node.identifier;
                                             lunrSearch.addDoc(doc);
-
 
                                             if (cachedindex) {
                                                 nodesIndexed[value.node.hash] = true;
@@ -4319,10 +4367,10 @@
                         scope.$watch(nodeType, function (filterNodeInput) {
                             self.$$app.getFilter().setNodeType(filterNodeInput);
                             self.$$app.setSearchIndex();
-
                         }, true);
 
                     } else {
+
                         self.$$app.getFilter().setNodeType(nodeType);
                         self.$$app.setSearchIndex();
 
@@ -6504,6 +6552,10 @@
                     }
 
                     if (this.getNodeType() != '') {
+                        return true;
+                    }
+
+                    if (this.getPropertyFilters()) {
                         return true;
                     }
 
