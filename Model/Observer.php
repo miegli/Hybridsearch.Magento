@@ -43,17 +43,17 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
     public function syncProduct($product, $batch = false)
     {
 
-
-        if ($product->getStatus() == 2 || $product->getData('visibility') < 3) {
-            return null;
-        }
-
         $dimensionConfigurationHash = $this->storeid;
         $workspaceHash = "live";
         $workspacename = $workspaceHash;
 
+        if ($product->getStatus() == 2 || $product->getData('visibility') < 3) {
+            $this->removeSingleIndex($product->getId(), $workspaceHash, $this->getBranch(), $dimensionConfigurationHash);
+            return true;
+        }
+
         Mage::app()->setCurrentStore($this->storeid);
-        $product->setStoreView($this->storeid);
+
         $attributes = $product->getAttributes();
 
         $properties = array();
@@ -146,15 +146,26 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         }
 
         $this->index->$workspaceHash->$dimensionConfigurationHash->___keywords->$identifier = $keywordsOfNode;
-        $product->clearInstance();
-        unset($product);
-        gc_collect_cycles();
+
+        if ($batch) {
+            $product->clearInstance();
+            unset($product);
+            gc_collect_cycles();
+        }
 
         if ($batch == false) {
-            $this->firebase->set("/lastsync/$workspacename/" . $this->branch, time());
+
+            try {
+                $this->firebase->set("/lastsync/$workspacename/" . $this->branch, time());
+            } catch (Exception $exception) {
+                // skip
+            }
+
             $this->save();
             $this->proceedQueue();
         }
+
+        return true;
 
     }
 
@@ -173,25 +184,47 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
         }
 
-        return true;
+        return false;
 
     }
+
+    /*
+     * @var Mage_Catalog_Model_Observer $observer
+     */
+    public function removeOne($observer)
+    {
+
+        if ($this->isrealtime) {
+            /* @var Mage_Core_Model_App $app */
+            $app = Mage::app();
+            if ($app->getLayout()->getArea() == 'adminhtml') {
+                $dimensionConfigurationHash = $this->storeid;
+                $workspaceHash = "live";
+                $this->removeSingleIndex($observer->getProduct()->getId(), $workspaceHash, $this->getBranch(), $dimensionConfigurationHash);
+                return true;
+            }
+
+        }
+
+        return false;
+
+    }
+
 
     public function syncAll()
     {
 
 
-        if (!$this->getArg('hybridsearch')) {
+        /* @var Mage_Core_Model_App $app */
+        $app = Mage::app();
+        if ($app->getLayout()->getArea() == 'adminhtml') {
             return true;
         }
 
-
         if ($this->getArg('proceed')) {
-
             $this->unlockReltimeIndexer();
             $this->proceedQueue();
             $this->updateStaticCache();
-
             return true;
         }
 
@@ -283,7 +316,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
             /* @var Mage_Catalog_Model_Entity_Attribute $attribute */
             if (isset($whiteListAttributes[$attribute->getAttributeCode()]) || $attribute->getIsSearchable() || $attribute->getIsComparable() || $attribute->getIsFilterable()) {
                 $k = $this->getAttributeName($attribute, $product);
-                $attribute->setStoreId($this->storeid);
+
                 $labels = $attribute->getStoreLabels();
                 $attributeData = array();
                 foreach ($this->additionalAttributeData as $d) {
@@ -387,7 +420,8 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
      */
     protected function _getUrl($product)
     {
-        return $product->setStoreId($this->storeid)->getProductUrl();
+        return $product->getProductUrl();
+        //return $product->setStoreId($this->storeid)->getProductUrl();
 
     }
 

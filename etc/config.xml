@@ -35,6 +35,15 @@
                     </hybridsearch_magento>
                 </observers>
             </catalog_product_save_after>
+            <catalog_product_delete_before>
+                <observers>
+                    <hybridsearch_magento>
+                        <class>hybridsearch_magento/observer</class>
+                        <method>removeOne</method>
+                        <type>singleton</type>
+                    </hybridsearch_magento>
+                </observers>
+            </catalog_product_delete_before>
         </events>
     </global>
 </config>
