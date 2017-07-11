@@ -26,6 +26,15 @@
                     </hybridsearch_magento>
                 </observers>
             </after_reindex_process_catalogsearch_fulltext>
+            <catalog_product_save_after>
+                <observers>
+                    <hybridsearch_magento>
+                        <class>hybridsearch_magento/observer</class>
+                        <method>syncOne</method>
+                        <type>singleton</type>
+                    </hybridsearch_magento>
+                </observers>
+            </catalog_product_save_after>
         </events>
     </global>
 </config>

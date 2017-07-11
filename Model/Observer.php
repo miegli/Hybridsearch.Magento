@@ -11,6 +11,8 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
     protected $imagehelper = null;
 
+    protected $isrealtime = false;
+
     /**
      * Hybridsearch_Magento_Model_Observer constructor.
      */
@@ -30,7 +32,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $this->staticCacheDirectory = Mage::getBaseDir('base') . "/_Hybridsearch/";
         mkdir($this->temporaryDirectory, 0755, true);
         $this->additionalAttributeData = explode(",", Mage::getStoreConfig('magento/info/additionAttributeData'));
-
+        $this->isrealtime = Mage::getStoreConfig('magento/info/realtime') == "1" ? true : false;
 
     }
 
@@ -156,10 +158,27 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
     }
 
+    /*
+     * @var Mage_Catalog_Model_Observer $observer
+     */
+    public function syncOne($observer)
+    {
+
+        if ($this->isrealtime) {
+            /* @var Mage_Core_Model_App $app */
+            $app = Mage::app();
+            if ($app->getLayout()->getArea() == 'adminhtml') {
+                $this->syncProduct($observer->getProduct());
+            }
+
+        }
+
+        return true;
+
+    }
 
     public function syncAll()
     {
-
 
 
         if (!$this->getArg('hybridsearch')) {
@@ -175,7 +194,6 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
             return true;
         }
-
 
         $workspacename = 'live';
 
@@ -225,6 +243,8 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $this->firebase->delete("/trash", array('print' => 'silent'));
         $this->updateFireBaseRules();
         $this->unlockReltimeIndexer();
+
+        return true;
 
 
     }
@@ -285,13 +305,12 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         }
 
 
-
         $k = $this->getAttributeName("thumbnail", $product);
         if (isset($data->node->properties->$k)) {
             /* @var Mage_Catalog_Helper_Image $img */
             $img = Mage::helper('catalog/image');
 
-            $productImage = Mage::getModel('catalog/product_media_config')->getMediaUrl( $product->getThumbnail());
+            $productImage = Mage::getModel('catalog/product_media_config')->getMediaUrl($product->getThumbnail());
 
 
             if ($productImage !== '') {
@@ -309,7 +328,6 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
             $data->node->properties->$k['data'] = array();
             $data->node->properties->$k['value'] = $this->_getPrice($product);
         }
-
 
 
         return $data;
