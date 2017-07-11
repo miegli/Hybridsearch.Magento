@@ -154,13 +154,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         }
 
         if ($batch == false) {
-
-            try {
-                $this->firebase->set("/lastsync/$workspacename/" . $this->branch, time());
-            } catch (Exception $exception) {
-                // skip
-            }
-
+            $this->firebase->set("/lastsync/$workspacename/" . $this->branch, time());
             $this->save();
             $this->proceedQueue();
         }
@@ -340,19 +334,23 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
         $k = $this->getAttributeName("thumbnail", $product);
         if (isset($data->node->properties->$k)) {
+
             /* @var Mage_Catalog_Helper_Image $img */
             $img = Mage::helper('catalog/image');
-
             $productImage = Mage::getModel('catalog/product_media_config')->getMediaUrl($product->getThumbnail());
-
-
-            if ($productImage !== '') {
+            if ($productImage !== '' && substr($productImage, -12, 12) !== 'no_selection') {
                 $data->node->properties->$k['value'] = (string)$productImage;
+            } else {
+                /* @var Mage_Catalog_Helper_Image $img */
+                $productImage = Mage::getModel('catalog/product_media_config')->getMediaUrl($product->getSmallImage());
+                if ($productImage !== '' && substr($productImage, -12, 12) !== 'no_selection') {
+                    $data->node->properties->$k['value'] = (string)$productImage;
+                }
             }
+
 
             unset($img);
             gc_collect_cycles();
-
         }
 
 
