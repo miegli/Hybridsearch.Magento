@@ -1364,6 +1364,8 @@ class SearchIndexFactory
 
                 }
 
+
+
                 if (isset($this->index->$workspaceHash->$dimensionConfigurationHash->$k) === false) {
                     $this->index->$workspaceHash->$dimensionConfigurationHash->$k = new \stdClass();
                 }
@@ -1459,11 +1461,11 @@ class SearchIndexFactory
 
             if (strlen($w) > 1) {
                 $wm = $this->getMetaphone($w);
-                $w = str_replace(".","",$w);
-                if (strlen($wm) > 0 && strlen($wm) < 64) {
+                if (mb_strlen($wm) > 0 && mb_strlen($wm) < 64) {
+                    $w = str_replace(".","",$w);
                     $wordsReduced[$wm][$w] = 1;
                     $wm = $this->getMetaphone(mb_substr($w, 0, 3));
-                    if (strlen($wm) > 0) {
+                    if (mb_strlen($wm) > 0) {
                         $wordsReduced["000" . $wm][$w] = 1;
                     }
                 }
@@ -1482,6 +1484,8 @@ class SearchIndexFactory
             }
         }
 
+
+
         $properties = null;
         unset($properties);
 
@@ -1498,15 +1502,11 @@ class SearchIndexFactory
     public function getMetaphone($string)
     {
 
-        if (is_numeric($string)) {
-            return str_replace((string)$string,".","");
-        }
-
         if (substr_count($string,".") && substr($string,-1,1) !== '.' && is_numeric(substr($string,0,1))) {
             return mb_strtoupper(str_replace(".","",$string));
         }
 
-        return mb_strtoupper(metaphone(mb_strtolower(str_replace($string,".","")), 6));
+        return str_replace(".","",mb_strtoupper(metaphone(mb_strtolower($string), 6)));
 
 
     }
