@@ -345,10 +345,10 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
                 $productImage = Mage::getModel('catalog/product_media_config')->getMediaUrl($product->getSmallImage());
                 if ($productImage !== '' && substr($productImage, -12, 12) !== 'no_selection') {
                     $data->node->properties->$k['value'] = (string)$productImage;
+                } else {
+                    $data->node->properties->$k['value'] = false;
                 }
             }
-
-
             unset($img);
             gc_collect_cycles();
         }
