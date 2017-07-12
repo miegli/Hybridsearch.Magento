@@ -323,7 +323,9 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         // stock
         $data->node->properties->stock = array();
         $stock = Mage::getSingleton('cataloginventory/stock_item')->loadByProduct($product);
-        $data->node->properties->stock = array('qty' => $stock->getQty(), 'status' => $stock->getManageStock() ? ($stock->getQty() ? $this->corehelper->__('In stock') : $this->corehelper->__('Out of stock')) : $this->corehelper->__('In stock'));
+        if ($stock) {
+            $data->node->properties->stock = array('qty' => $stock->getQty(), 'status' => $stock->getManageStock() ? ($stock->getQty() ? $this->corehelper->__('In stock') : $this->corehelper->__('Out of stock')) : $this->corehelper->__('In stock'));
+        }
 
 
         // related
@@ -332,7 +334,9 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
             foreach ($product->getRelatedProductIds() as $relatedProductId) {
                 $_related = Mage::getSingleton('catalog/product')->load($relatedProductId);
                 $level++;
-                array_push($data->node->properties->related, $this->convertNodeToSearchIndexResult($_related, $level));
+                if ($_related) {
+                    array_push($data->node->properties->related, $this->convertNodeToSearchIndexResult($_related, $level));
+                }
             }
         }
 
