@@ -10,6 +10,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 {
 
     protected $imagehelper = null;
+    protected $corehelper = null;
 
     protected $isrealtime = false;
 
@@ -33,6 +34,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         mkdir($this->temporaryDirectory, 0755, true);
         $this->additionalAttributeData = explode(",", Mage::getStoreConfig('magento/info/additionAttributeData'));
         $this->isrealtime = Mage::getStoreConfig('magento/info/realtime') == "1" ? true : false;
+        $this->corehelper = Mage::helper('core');
 
     }
 
@@ -306,6 +308,34 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
         $whiteListAttributes = array("thumbnail" => true, "shortdescription" => true);
 
+
+        // categories
+        $data->node->properties->categories = array();
+        $categoryIds = $product->getCategoryIds();
+        if(count($categoryIds) ){
+            foreach ($categoryIds as $categoryId) {
+                $_category = Mage::getSingleton('catalog/category')->load($categoryId);
+                array_push($data->node->properties->categories,array('name' => $_category->getName(), 'url' => $_category->getUrl(), 'id' => $_category->getId(), 'image' => $_category->getImageUrl()));
+            }
+        }
+
+
+
+        // stock
+        $data->node->properties->stock = array();
+        $stock = Mage::getSingleton('cataloginventory/stock_item')->loadByProduct($product);
+        $data->node->properties->stock = array('qty' => $stock->getQty(), 'status' => $stock->getManageStock() ? ($stock->getQty() ? $this->corehelper->__('In stock') : $this->corehelper->__('Out of stock')) : $this->corehelper->__('In stock'));
+
+
+        // related
+        $data->node->properties->related = array();
+        foreach ($product->getRelatedProductIds() as $relatedProductId) {
+            $_related = Mage::getSingleton('catalog/product')->load($relatedProductId);;
+            array_push($data->node->properties->related,$this->convertNodeToSearchIndexResult($_related));
+        }
+
+
+        // attributes
         foreach ($product->getAttributes() as $attribute) {
             /* @var Mage_Catalog_Model_Entity_Attribute $attribute */
             if (isset($whiteListAttributes[$attribute->getAttributeCode()]) || $attribute->getIsSearchable() || $attribute->getIsComparable() || $attribute->getIsFilterable()) {
