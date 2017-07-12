@@ -290,7 +290,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
      * @param Mage_Catalog_Model_Product $product
      * @return \stdClass
      */
-    public function convertNodeToSearchIndexResult($product)
+    public function convertNodeToSearchIndexResult($product, $level = 0)
     {
 
         $data = new \stdClass();
@@ -312,13 +312,12 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         // categories
         $data->node->properties->categories = array();
         $categoryIds = $product->getCategoryIds();
-        if(count($categoryIds) ){
+        if (count($categoryIds)) {
             foreach ($categoryIds as $categoryId) {
                 $_category = Mage::getSingleton('catalog/category')->load($categoryId);
-                array_push($data->node->properties->categories,array('name' => $_category->getName(), 'url' => $_category->getUrl(), 'id' => $_category->getId(), 'image' => $_category->getImageUrl()));
+                array_push($data->node->properties->categories, array('name' => $_category->getName(), 'url' => $_category->getUrl(), 'id' => $_category->getId(), 'image' => $_category->getImageUrl()));
             }
         }
-
 
 
         // stock
@@ -328,10 +327,13 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
 
         // related
-        $data->node->properties->related = array();
-        foreach ($product->getRelatedProductIds() as $relatedProductId) {
-            $_related = Mage::getSingleton('catalog/product')->load($relatedProductId);;
-            array_push($data->node->properties->related,$this->convertNodeToSearchIndexResult($_related));
+        if ($level === 0) {
+            $data->node->properties->related = array();
+            foreach ($product->getRelatedProductIds() as $relatedProductId) {
+                $_related = Mage::getSingleton('catalog/product')->load($relatedProductId);
+                $level++;
+                array_push($data->node->properties->related, $this->convertNodeToSearchIndexResult($_related, $level));
+            }
         }
 
 
