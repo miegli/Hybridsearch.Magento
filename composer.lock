@@ -582,16 +582,16 @@
         },
         {
             "name": "neoslive/hybridsearch",
-            "version": "1.1.28",
+            "version": "1.1.29",
             "source": {
                 "type": "git",
                 "url": "https://github.com/miegli/Neoslive.Hybridsearch.git",
-                "reference": "f3e74b554bfed97ae1970da54a04fef115ca7819"
+                "reference": "adf1f29458ec7cba6282367925e87d960b0b4c59"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/miegli/Neoslive.Hybridsearch/zipball/f3e74b554bfed97ae1970da54a04fef115ca7819",
-                "reference": "f3e74b554bfed97ae1970da54a04fef115ca7819",
+                "url": "https://api.github.com/repos/miegli/Neoslive.Hybridsearch/zipball/adf1f29458ec7cba6282367925e87d960b0b4c59",
+                "reference": "adf1f29458ec7cba6282367925e87d960b0b4c59",
                 "shasum": ""
             },
             "require": {
@@ -610,7 +610,7 @@
             },
             "notification-url": "https://packagist.org/downloads/",
             "description": "Add description here",
-            "time": "2017-07-11 11:27:51"
+            "time": "2017-07-11 20:45:50"
         },
         {
             "name": "paragonie/random_compat",

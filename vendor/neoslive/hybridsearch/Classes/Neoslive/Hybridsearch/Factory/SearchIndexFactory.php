@@ -2093,7 +2093,6 @@ class SearchIndexFactory
         }
 
         if ($this->isLockReltimeIndexer() === false) {
-
             $this->lockReltimeIndexer();
             $files = array();
 

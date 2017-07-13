@@ -546,8 +546,6 @@
                  */
                 var HybridsearchResultsNode = function (nodeData, score) {
 
-
-
                     var self = this;
 
                     angular.forEach(nodeData, function (val, key) {
@@ -823,11 +821,13 @@
                         if (typeof property == 'string' && property.indexOf(".") >= 0) {
                             this.properties[propertyfullname] = this.getPropertyFromNode(this, property);
                             return this.properties[propertyfullname];
+
                         }
 
                         if (typeof property == 'function') {
                             return this.getPropertyFromNode(this, property);
                         }
+
 
                         angular.forEach(this.properties, function (val, key) {
                             if (value === '' && key.substr(key.length - property.length, property.length) === property) {
@@ -836,15 +836,12 @@
                             }
                         });
 
-
-
                         if (typeof value === 'string' && ((value.substr(0, 2) === '["' && value.substr(-2, 2) === '"]') || (value.substr(0, 2) === '[{' && value.substr(-2, 2) === '}]') )) {
                             try {
                                 var valueJson = JSON.parse(value);
                             } catch (e) {
                                 valueJson = value;
                             }
-
                             if (valueJson) {
                                 this.properties[propertyfullname] = valueJson;
                                 return this.properties[propertyfullname];
@@ -855,7 +852,6 @@
                         if (property == 'breadcrumb' && value == '') {
                             return this.breadcrumb
                         }
-
 
                         return value;
 
@@ -3639,11 +3635,11 @@
 
                         querysegment = this.getEmoijQuery(querysegment);
 
-                        if (querysegment.indexOf(".") && querysegment.substr(-1, 1) !== '.' && isNaN(querysegment.substr(0, 1)) === false) {
-                            return String(querysegment).replace(/\./g, "").toUpperCase();
+                        if (querysegment.indexOf(".") && querysegment.substr(-1,1) !== '.' && isNaN(querysegment.substr(0,1)) === false) {
+                            return String(querysegment).replace(/\./g,"").toUpperCase();
                         }
 
-                        var m = metaphone(querysegment.toLowerCase(), 6).toUpperCase().replace(/\./g, "");
+                        var m = metaphone(querysegment.toLowerCase(), 6).toUpperCase().replace(/\./g,"");
 
                         return m.length > 0 ? m : null;
 

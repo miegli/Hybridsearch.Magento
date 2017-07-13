@@ -11,7 +11,6 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
     protected $imagehelper = null;
     protected $corehelper = null;
-
     protected $isrealtime = false;
 
     /**
@@ -226,23 +225,22 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
         $workspacename = 'live';
 
-        $this->getBranch($workspacename);
-        $this->switchBranch($workspacename);
-
         $this->deleteQueue();
         $this->lockReltimeIndexer();
 
         $this->firebase->set("/lastsync/$workspacename/" . $this->branch, time());
         $this->creatingFullIndex = true;
 
-
         $stores = Mage::app()->getStores();
-
 
         foreach ($stores as $store) {
             $this->storeid = $store->getId();
             Mage::app()->setCurrentStore($this->storeid);
-            $products = Mage::getSingleton('catalog/product')->getCollection()->addStoreFilter($this->storeid);
+            if ($this->getArg('limit')) {
+                $products = Mage::getSingleton('catalog/product')->getCollection()->addStoreFilter($this->storeid)->setPageSize($this->getArg('limit'));
+            } else {
+                $products = Mage::getSingleton('catalog/product')->getCollection()->addStoreFilter($this->storeid);
+            }
 
             $counter = 0;
             foreach ($products as $prod) {
@@ -266,7 +264,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
         // remove old sites data
         $this->switchBranch($workspacename);
-        $this->deleteIndex($this->getSiteIdentifier(), $this->branch);
+        $this->deleteIndex($this->getSiteIdentifier(), $this->switchBranch($workspacename));
 
         // remove trash
         $this->firebase->delete("/trash", array('print' => 'silent'));
@@ -367,18 +365,17 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
             unset($attribute);
         }
 
-
         $k = $this->getAttributeName("thumbnail", $product);
         if (isset($data->node->properties->$k)) {
 
             /* @var Mage_Catalog_Helper_Image $img */
             $img = Mage::helper('catalog/image');
-            $productImage = Mage::getModel('catalog/product_media_config')->getMediaUrl($product->getThumbnail());
+            $productImage = Mage::getSingleton('catalog/product_media_config')->getMediaUrl($product->getThumbnail());
             if ($productImage !== '' && substr($productImage, -12, 12) !== 'no_selection') {
                 $data->node->properties->$k['value'] = (string)$productImage;
             } else {
                 /* @var Mage_Catalog_Helper_Image $img */
-                $productImage = Mage::getModel('catalog/product_media_config')->getMediaUrl($product->getSmallImage());
+                $productImage = Mage::getSingleton('catalog/product_media_config')->getMediaUrl($product->getSmallImage());
                 if ($productImage !== '' && substr($productImage, -12, 12) !== 'no_selection') {
                     $data->node->properties->$k['value'] = (string)$productImage;
                 } else {
