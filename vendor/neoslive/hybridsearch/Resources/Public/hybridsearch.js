@@ -3317,7 +3317,7 @@
                                                                         var isstaticcached = true;
 
                                                                         angular.forEach(groupedByNodeType, function (group, nodetype) {
-                                                                            if (staticCachedNodes[nodetype] == undefined) {
+                                                                            if (staticCachedNodes !== undefined && staticCachedNodes[nodetype] == undefined) {
                                                                                 isstaticcached = false;
                                                                             }
                                                                         });
@@ -3353,12 +3353,14 @@
                                                                                 }
 
                                                                                 self.addPendingRequest($http(req).success(function (data) {
-                                                                                    angular.forEach(groupedByNodeType[nodetype].nodes, function (node, identifier) {
-                                                                                        groupedByNodeTypeNodes.push(data[identifier]);
-                                                                                    });
-                                                                                    requestCountDone++;
-                                                                                    if (staticCachedNodes[nodetype] == undefined) {
-                                                                                        staticCachedNodes[nodetype] = data;
+                                                                                    if (data) {
+                                                                                        angular.forEach(groupedByNodeType[nodetype].nodes, function (node, identifier) {
+                                                                                            groupedByNodeTypeNodes.push(data[identifier]);
+                                                                                        });
+                                                                                        requestCountDone++;
+                                                                                        if (staticCachedNodes[nodetype] == undefined) {
+                                                                                            staticCachedNodes[nodetype] = data;
+                                                                                        }
                                                                                     }
                                                                                     //execute(keyword, groupedByNodeType[nodetype]['nodes'], ref);
                                                                                     if (requestCountDone == requestCount) {
