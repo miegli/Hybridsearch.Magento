@@ -26,14 +26,15 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $this->firebase->setTimeOut(0);
         $this->storeid = 1;
         $this->createFullIndex = false;
-        $this->branch = "master";
-        $this->branchSwitch = "slave";
         $this->temporaryDirectory = Mage::getBaseDir('cache') . "/hybridsearch/";
         $this->staticCacheDirectory = Mage::getBaseDir('base') . "/_Hybridsearch/";
         mkdir($this->temporaryDirectory, 0755, true);
         $this->additionalAttributeData = explode(",", Mage::getStoreConfig('magento/info/additionAttributeData'));
         $this->isrealtime = Mage::getStoreConfig('magento/info/realtime') == "1" ? true : false;
         $this->corehelper = Mage::helper('core');
+        $this->branch = "master";
+        $this->branchSwitch = "slave";
+
 
     }
 
@@ -225,6 +226,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
         $workspacename = 'live';
 
+        $this->switchBranch($workspacename);
         $this->deleteQueue();
         $this->lockReltimeIndexer();
 
@@ -264,7 +266,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
         // remove old sites data
         $this->switchBranch($workspacename);
-        $this->deleteIndex($this->getSiteIdentifier(), $this->switchBranch($workspacename));
+        $this->deleteIndex($this->getSiteIdentifier(), $this->branch);
 
         // remove trash
         $this->firebase->delete("/trash", array('print' => 'silent'));
