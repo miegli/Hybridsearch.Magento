@@ -363,7 +363,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
             }
 
             if ($productImageUrl !== '') {
-                $data->node->properties->$k['value'] = (string)$productImage;
+                $data->node->properties->$k['value'] = (string)$productImageUrl;
             }
 
 
