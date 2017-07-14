@@ -12,6 +12,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
     protected $imagehelper = null;
     protected $corehelper = null;
     protected $isrealtime = false;
+    protected $imagebaseurl = null;
 
     /**
      * Hybridsearch_Magento_Model_Observer constructor.
@@ -32,6 +33,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         mkdir($this->temporaryDirectory, 0755, true);
         $this->additionalAttributeData = explode(",", Mage::getStoreConfig('magento/info/additionAttributeData'));
         $this->isrealtime = Mage::getStoreConfig('magento/info/realtime') == "1" ? true : false;
+        $this->imagebaseurl = Mage::getStoreConfig('magento/info/imagebaseurl')."/";
         $this->corehelper = Mage::helper('core');
         $this->imagehelper = Mage::helper('catalog/image');
         $this->branch = "master";
@@ -352,20 +354,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $k = $this->getAttributeName("thumbnail", $product);
         if (isset($data->node->properties->$k)) {
 
-            $productImageUrl = '';
-            $productImage = Mage::getBaseDir('media') . "/catalog/product/". Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($product->getId(), 'image', Mage::app()->getStore());
-            if (is_file($productImage) && filesize($productImage) < 100000) {
-                $productImageUrl = $this->imagehelper->init($product, 'small_image')
-                    ->constrainOnly(false)
-                    ->keepAspectRatio(true)
-                    ->keepFrame(true)
-                    ->resize(360, 360);
-            }
-
-            if ($productImageUrl !== '') {
-                $data->node->properties->$k['value'] = (string)$productImageUrl;
-            }
-
+            $data->node->properties->$k['value'] = $this->imagebaseurl . Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($product->getId(), 'image', Mage::app()->getStore());
 
         }
 

@@ -61,7 +61,15 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </additionAttributeData>
-
+                        <imagebaseurl translate="label tooltip" module="magento">
+                            <label>Image Base Url</label>
+                            <frontend_type>text</frontend_type>
+                            <tooltip>Enter image base url (https://cdn.your-domain.com/media/catalog/product/cache/1/small_image/350x/9df78eab33525d08d6e5fb8d27136e95/)</tooltip>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </imagebaseurl>
                     </fields>
                 </info>
             </groups>
