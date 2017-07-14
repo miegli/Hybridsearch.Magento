@@ -33,6 +33,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $this->additionalAttributeData = explode(",", Mage::getStoreConfig('magento/info/additionAttributeData'));
         $this->isrealtime = Mage::getStoreConfig('magento/info/realtime') == "1" ? true : false;
         $this->corehelper = Mage::helper('core');
+        $this->imagehelper = Mage::helper('catalog/image');
         $this->branch = "master";
         $this->branchSwitch = "slave";
 
@@ -351,21 +352,21 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         $k = $this->getAttributeName("thumbnail", $product);
         if (isset($data->node->properties->$k)) {
 
-            /* @var Mage_Catalog_Helper_Image $img */
-            $productImage = (string)Mage::helper('catalog/image')->init($product, 'small_image')->resize(360);
-
-            if ($productImage !== '') {
-                $data->node->properties->$k['value'] = (string)$productImage;
-            } else {
-                /* @var Mage_Catalog_Helper_Image $img */
-                $productImage = Mage::getSingleton('catalog/product_media_config')->getMediaUrl($product->getSmallImage());
-                if ($productImage !== '' && substr($productImage, -12, 12) !== 'no_selection') {
-                    $data->node->properties->$k['value'] = (string)$productImage;
-                } else {
-                    $data->node->properties->$k['value'] = false;
-                }
+            $productImageUrl = '';
+            $productImage = Mage::getBaseDir('media') . "/catalog/product/". Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($product->getId(), 'image', Mage::app()->getStore());
+            if (is_file($productImage) && filesize($productImage) < 2500000) {
+                $productImageUrl = $this->imagehelper->init($product, 'small_image')
+                    ->constrainOnly(false)
+                    ->keepAspectRatio(true)
+                    ->keepFrame(true)
+                    ->resize(360, 360);
             }
-            unset($img);
+
+            if ($productImageUrl !== '') {
+                $data->node->properties->$k['value'] = (string)$productImage;
+            }
+
+
         }
 
 
