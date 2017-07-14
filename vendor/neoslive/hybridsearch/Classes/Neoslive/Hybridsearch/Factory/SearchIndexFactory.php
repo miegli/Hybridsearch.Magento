@@ -435,6 +435,7 @@ class SearchIndexFactory
         if ($currentBranch == $this->branch) {
             $this->branch = $this->branchSwitch;
             $this->branchSwitch = $currentBranch;
+            return $this->branchSwitch;
         }
 
 
@@ -671,6 +672,7 @@ class SearchIndexFactory
 
         $this->output->outputLine('indexing nodes');
 
+
         foreach ($moditifedNodeData as $nodedata) {
 
             $this->output->progressAdvance(1);
@@ -691,17 +693,15 @@ class SearchIndexFactory
                 $this->nodetypes->$nt = 1;
             }
 
-
         }
-        $this->output->progressFinish();
 
+        $this->output->progressFinish();
         $this->output->outputLine('preparing upload');
 
         $this->save();
         $this->unlockReltimeIndexer();
 
         $this->output->outputLine('uploading indexed nodes');
-
         $this->proceedQueue();
 
 
@@ -1453,6 +1453,8 @@ class SearchIndexFactory
         $text = preg_replace('~[^\p{L}\p{N}-\.0-9]++~u', " ", mb_strtolower($text));
         $words = explode(" ", ($text));
 
+
+
         // reduce
         $wordsReduced = array();
 
@@ -1462,7 +1464,12 @@ class SearchIndexFactory
             if (strlen($w) > 1) {
                 $wm = $this->getMetaphone($w);
                 if (mb_strlen($wm) > 0 && mb_strlen($wm) < 64) {
-                    $w = str_replace(".","",$w);
+                    $a = explode(".",$w,2);
+                    if ($a) {
+                        $w = $a[0];
+                    }
+                    $w = str_replace("-"," ",$w);
+
                     $wordsReduced[$wm][$w] = 1;
                     $wm = $this->getMetaphone(mb_substr($w, 0, 3));
                     if (mb_strlen($wm) > 0) {
@@ -1474,9 +1481,10 @@ class SearchIndexFactory
             }
         }
 
+
         foreach ($wordsReduced as $w => $k) {
 
-            if (strlen($w) > 1) {
+            if (mb_strlen($w) > 1) {
                 $w = Encoding::UTF8FixWin1252Chars($w);
                 if ($w) {
                     $keywords->$w = $k;
@@ -1971,8 +1979,8 @@ class SearchIndexFactory
 
         if ($chunkcounter < 100 && count($data) > 2 && strlen(json_encode($data)) > 10000000) {
             $chunkcounter++;
-            $this->addToQueue($path, array_slice($data, 0, abs(count($data) / 2)), $method, $chunkcounter);
-            $this->addToQueue($path, array_slice($data, abs(count($data) / 2)), $method, $chunkcounter);
+            $this->addToQueue($path, array_slice($data, 0, ceil(count($data) / 2)), $method, $chunkcounter);
+            $this->addToQueue($path, array_slice($data, floor(count($data) / 2)), $method, $chunkcounter);
             unset($data);
             return true;
         } else {
@@ -2410,6 +2418,7 @@ class SearchIndexFactory
                 foreach ($workspaces as $workspace => $workspaceData) {
                     $this->firebase->delete("sites/" . $site . "/index/$workspace/" . $branch, array('print' => 'silent'));
                     $this->firebase->delete("sites/" . $site . "/keywords/$workspace/" . $branch, array('print' => 'silent'));
+                    $this->firebase->delete("sites/" . $site . "/nodetypes/$workspace/" . $branch, array('print' => 'silent'));
                 }
             }
 

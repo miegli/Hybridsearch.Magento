@@ -352,9 +352,9 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         if (isset($data->node->properties->$k)) {
 
             /* @var Mage_Catalog_Helper_Image $img */
-            $img = Mage::helper('catalog/image');
-            $productImage = Mage::getSingleton('catalog/product_media_config')->getMediaUrl($product->getThumbnail());
-            if ($productImage !== '' && substr($productImage, -12, 12) !== 'no_selection') {
+            $productImage = (string)Mage::helper('catalog/image')->init($product, 'small_image')->resize(360);
+
+            if ($productImage !== '') {
                 $data->node->properties->$k['value'] = (string)$productImage;
             } else {
                 /* @var Mage_Catalog_Helper_Image $img */
