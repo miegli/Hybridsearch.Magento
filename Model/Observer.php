@@ -354,7 +354,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
 
             $productImageUrl = '';
             $productImage = Mage::getBaseDir('media') . "/catalog/product/". Mage::getResourceSingleton('catalog/product')->getAttributeRawValue($product->getId(), 'image', Mage::app()->getStore());
-            if (is_file($productImage) && filesize($productImage) < 2500000) {
+            if (is_file($productImage) && filesize($productImage) < 100000) {
                 $productImageUrl = $this->imagehelper->init($product, 'small_image')
                     ->constrainOnly(false)
                     ->keepAspectRatio(true)
