@@ -359,7 +359,7 @@ class SearchIndexFactory
         }
 
         $this->temporaryDirectory = $temporaryDirectory;
-        $this->staticCacheDirectory = $this->temporaryDirectory. "../../../../Web/_Hybridsearch";
+        $this->staticCacheDirectory = $this->temporaryDirectory . "../../../../Web/_Hybridsearch";
         $this->queuecounter = 100000000;
         $this->allSiteKeys = array();
         $this->index = new \stdClass();
@@ -505,7 +505,7 @@ class SearchIndexFactory
                             }
 
                             if (is_dir($targetSubPath)) {
-                                $nodetype = str_replace("__","",$nodetype);
+                                $nodetype = str_replace("__", "", $nodetype);
                                 $fp = fopen($targetSubPath . "/__" . $nodetype . ".json", 'w+');
                                 $this->fwrite_stream($fp, $this->firebase->get("sites/$sitekey/index/$workspacename/$branch/$dimension/__$nodetype"));
                                 fclose($fp);
@@ -757,7 +757,7 @@ class SearchIndexFactory
     /**
      * Removes trashes nods
      */
-    public  function removeTrashedNodes()
+    public function removeTrashedNodes()
     {
 
 
@@ -954,7 +954,7 @@ class SearchIndexFactory
      * @param string $workspaceName
      * @param string nodeTypeName
      */
-    public  function syncByNodeType($workspaceName = 'live', $nodeTypeName = null)
+    public function syncByNodeType($workspaceName = 'live', $nodeTypeName = null)
     {
 
 
@@ -986,7 +986,7 @@ class SearchIndexFactory
      * @param string $workspaceName
      * @param string $nodeIdentifier
      */
-    public  function syncByNodeIdentifier($workspaceName = 'live', $nodeIdentifier)
+    public function syncByNodeIdentifier($workspaceName = 'live', $nodeIdentifier)
     {
 
 
@@ -1175,7 +1175,7 @@ class SearchIndexFactory
      * @param string $nodeTypeFilter If specified, only nodes with that node type are considered
      * @return void
      */
-    public  function generateIndex($node, $workspace, $dimensionConfiguration, $nodeTypeFilter = '')
+    public function generateIndex($node, $workspace, $dimensionConfiguration, $nodeTypeFilter = '')
     {
 
 
@@ -1229,7 +1229,7 @@ class SearchIndexFactory
      * @param mixed $removeNodeByNodeTypeName
      * @return void
      */
-    public  function removeSingleIndex($nodeIdentifier, $workspaceHash, $branch, $dimensionConfigurationHash, $keywordsOfNode = array(), $siteIdentifier = null, $removeNodeByNodeTypeName = null)
+    public function removeSingleIndex($nodeIdentifier, $workspaceHash, $branch, $dimensionConfigurationHash, $keywordsOfNode = array(), $siteIdentifier = null, $removeNodeByNodeTypeName = null)
     {
 
         if ($this->creatingFullIndex) {
@@ -1277,7 +1277,7 @@ class SearchIndexFactory
      * @param string $dimensionConfigurationHash
      * @return void
      */
-    public  function generateSingleIndex($node, $workspace, $dimensionConfigurationHash)
+    public function generateSingleIndex($node, $workspace, $dimensionConfigurationHash)
     {
 
         $this->indexcounter++;
@@ -1344,14 +1344,14 @@ class SearchIndexFactory
 
 
                 if (substr($k, 0, 2) !== "__") {
-                      array_push($keywordsOfNode, $k);
+                    array_push($keywordsOfNode, $k);
                 }
 
                 if (substr($k, 0, 9) === "_nodetype") {
                     $k = "_" . $this->getNodeTypeName($node) . mb_substr($k, 9);
                 }
 
-                if ($k) {
+                if ($k && substr_count($keyword,"-") < 3 && substr_count($keyword,"_") == 0) {
                     if (isset($this->keywords->$workspaceHash->$dimensionConfigurationHash[$k]) == false) {
                         $this->keywords->$workspaceHash->$dimensionConfigurationHash[$k] = array();
                     }
@@ -1363,7 +1363,6 @@ class SearchIndexFactory
                     }
 
                 }
-
 
 
                 if (isset($this->index->$workspaceHash->$dimensionConfigurationHash->$k) === false) {
@@ -1400,7 +1399,7 @@ class SearchIndexFactory
             unset($indexData);
             unset($keywords);
 
-            if (time() - $this->time > 300 || count($this->index->$workspaceHash->$dimensionConfigurationHash->$k) > 500) {
+            if (time() - $this->time > 100 || count($this->index->$workspaceHash->$dimensionConfigurationHash->$k) > 250) {
                 $this->time = time();
                 $this->save();
             };
@@ -1431,28 +1430,32 @@ class SearchIndexFactory
 
         foreach ($properties as $property => $value) {
 
+
             if (gettype($value) == 'string' || is_numeric($value)) {
 
                 $j = json_decode($value);
                 if ($j) {
                     $text .= " " . (json_encode($j, JSON_UNESCAPED_UNICODE));
+                    $text = preg_replace('/_/', "", mb_strtolower($text));
+                    $text = preg_replace('/\{"(.*)":/', " ", mb_strtolower($text));
                 } else {
                     $text .= " " . $value;
                 }
 
 
             } else {
-
                 $text .= " " . (json_encode($value, JSON_UNESCAPED_UNICODE));
-
+                $text = preg_replace('/_/', "", mb_strtolower($text));
+                $text = preg_replace('/\{"(.*)":/', " ", mb_strtolower($text));
             }
 
         }
 
-        $text = (Encoding::UTF8FixWin1252Chars(html_entity_decode($text)));
-        $text = preg_replace('~[^\p{L}\p{N}-\.0-9]++~u', " ", mb_strtolower($text));
-        $words = explode(" ", ($text));
 
+        $text = (Encoding::UTF8FixWin1252Chars(html_entity_decode($text)));
+        $text = preg_replace('~[^\p{L}\p{N}0-9]++~u', " ", mb_strtolower($text));
+
+        $words = explode(" ", ($text));
 
 
         // reduce
@@ -1460,32 +1463,34 @@ class SearchIndexFactory
 
         foreach ($words as $w) {
 
+            $w = trim($w, "-");
 
-            if (strlen($w) > 1) {
-                $wm = $this->getMetaphone($w);
-                if (mb_strlen($wm) > 0 && mb_strlen($wm) < 64) {
-                    $a = explode(".",$w,2);
-                    if ($a) {
-                        $w = $a[0];
-                    }
-                    $w = str_replace("-"," ",$w);
+            if (strlen($w) > 1 && strlen($w) < 25) {
 
-                    $wordsReduced[$wm][$w] = 1;
-                    $wm = $this->getMetaphone(mb_substr($w, 0, 3));
-                    if (mb_strlen($wm) > 0) {
-                        $wordsReduced["000" . $wm][$w] = 1;
+                if (
+                    substr_count($w, "-") > 3 ||
+                    (is_numeric(substr($w, -1, 1)) && is_numeric(substr($w, 0, 1)) == false)
+                ) {
+                    // skip
+                } else {
+
+                    $wm = $this->getMetaphone($w);
+                    $w = str_replace(".", "", $w);
+                    if (strlen($wm) > 0 && strlen($wm) < 64) {
+                        $wordsReduced[$wm][$w] = 1;
+                        $wm = $this->getMetaphone(mb_substr($w, 0, 3));
+                        if (strlen($wm) > 0) {
+                            $wordsReduced["000" . $wm][$w] = 1;
+                        }
+
                     }
                 }
-
 
             }
         }
 
-
         foreach ($wordsReduced as $w => $k) {
-
-            if (mb_strlen($w) > 1) {
-                $w = Encoding::UTF8FixWin1252Chars($w);
+            if (strlen($w) > 1) {
                 if ($w) {
                     $keywords->$w = $k;
                 }
@@ -1493,9 +1498,10 @@ class SearchIndexFactory
         }
 
 
-
         $properties = null;
         unset($properties);
+
+
 
         return $keywords;
 
@@ -1510,11 +1516,11 @@ class SearchIndexFactory
     public function getMetaphone($string)
     {
 
-        if (substr_count($string,".") && substr($string,-1,1) !== '.' && is_numeric(substr($string,0,1))) {
-            return mb_strtoupper(str_replace(".","",$string));
+        if (substr_count($string, ".") && substr($string, -1, 1) !== '.' && is_numeric(substr($string, 0, 1))) {
+            return mb_strtoupper(str_replace(".", "", $string));
         }
 
-        return str_replace(".","",mb_strtoupper(metaphone(mb_strtolower($string), 6)));
+        return str_replace(".", "", mb_strtoupper(metaphone(mb_strtolower($string), 6)));
 
 
     }
@@ -1537,7 +1543,7 @@ class SearchIndexFactory
      * @param string $parentNodeFilter
      * @return \stdClass
      */
-    public  function convertNodeToSearchIndexResult($node, $grandParentNodeFilter = '', $parentNodeFilter = '', $depth = 0)
+    public function convertNodeToSearchIndexResult($node, $grandParentNodeFilter = '', $parentNodeFilter = '', $depth = 0)
     {
 
 
@@ -1976,8 +1982,7 @@ class SearchIndexFactory
     {
 
 
-
-        if ($chunkcounter < 100 && count($data) > 2 && strlen(json_encode($data)) > 10000000) {
+        if ($chunkcounter < 100 && count($data) > 2 && strlen(json_encode($data)) > 1000000) {
             $chunkcounter++;
             $this->addToQueue($path, array_slice($data, 0, ceil(count($data) / 2)), $method, $chunkcounter);
             $this->addToQueue($path, array_slice($data, floor(count($data) / 2)), $method, $chunkcounter);
@@ -2034,7 +2039,7 @@ class SearchIndexFactory
      * @param $string
      * @return int
      */
-    public  function fwrite_stream($fp, $string)
+    public function fwrite_stream($fp, $string)
     {
         for ($written = 0; $written < strlen($string); $written += $fwrite) {
             $fwrite = fwrite($fp, substr($string, $written));
@@ -2166,7 +2171,16 @@ class SearchIndexFactory
 
                         if (strlen($out)) {
                             \Neos\Flow\var_dump($out, 'see log file ' . $file . ".error.log");
+//                            foreach ($content->data as $k => $v) {
+//                                $out = $this->firebase->set($content->path."/".$k,$v,array('print' => 'silent'));
+//                                $this->output->outputLine($content->path."/".$k);
+//                                if (strlen($out)) {
+//                                    \Neos\Flow\var_dump($content->path."/".$k, 'see log file ' . $file . ".error.log");
+//                                }
+//                            }
                             rename($file, $file . ".error.log");
+
+
                         } else {
                             unlink($file);
                         }
@@ -2295,7 +2309,13 @@ class SearchIndexFactory
                 foreach ($dimensionData as $dimensionIndex => $dimensionIndexData) {
 
                     foreach ($dimensionIndexData as $dimensionIndexKey => $dimensionIndexDataAll) {
-                        $patch[$dimension . "/" . $dimensionIndex . "/" . $dimensionIndexKey] = $dimensionIndexDataAll;
+                        if (is_array($dimensionIndexDataAll)) {
+                            foreach ($dimensionIndexDataAll as $dimensionIndexDataAllKey => $dimensionIndexDataAllVal) {
+                                $patch[$dimension . "/" . $dimensionIndex . "/" . $dimensionIndexKey . "/" . $dimensionIndexDataAllKey] = $dimensionIndexDataAllVal;
+                            }
+                        } else {
+                            $patch[$dimension . "/" . $dimensionIndex . "/" . $dimensionIndexKey . "/" . $dimensionIndexDataAll] = $dimensionIndexDataAll;
+                        }
                     }
                 }
 
@@ -2319,7 +2339,6 @@ class SearchIndexFactory
         }
 
 
-
         foreach ($this->keywords as $workspace => $workspaceData) {
 
             $patch = array();
@@ -2330,7 +2349,7 @@ class SearchIndexFactory
                             $patch[$workspace . "/" . $this->branch . "/" . $dimensionIndex . "/" . $dimensionIndexKey . "/" . $dimensionIndexDataAllKey] = $dimensionIndexDataAllVal;
                         }
                     } else {
-                        $patch[$workspace . "/" . $this->branch . "/" . $dimensionIndex . "/" . $dimensionIndexKey] = $dimensionIndexDataAll;
+                        $patch[$workspace . "/" . $this->branch . "/" . $dimensionIndex . "/" . $dimensionIndexKey . "/" . $dimensionIndexDataAll] = $dimensionIndexDataAll;
                     }
                 }
             }

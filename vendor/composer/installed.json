@@ -1163,17 +1163,17 @@
     },
     {
         "name": "neoslive/hybridsearch",
-        "version": "1.1.32",
-        "version_normalized": "1.1.32.0",
+        "version": "1.1.33",
+        "version_normalized": "1.1.33.0",
         "source": {
             "type": "git",
             "url": "https://github.com/miegli/Neoslive.Hybridsearch.git",
-            "reference": "635c4ff154b0f26361051a6a73a2eac669ad9885"
+            "reference": "fd303b514091a18079871e0874a44077bcd13466"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/miegli/Neoslive.Hybridsearch/zipball/635c4ff154b0f26361051a6a73a2eac669ad9885",
-            "reference": "635c4ff154b0f26361051a6a73a2eac669ad9885",
+            "url": "https://api.github.com/repos/miegli/Neoslive.Hybridsearch/zipball/fd303b514091a18079871e0874a44077bcd13466",
+            "reference": "fd303b514091a18079871e0874a44077bcd13466",
             "shasum": ""
         },
         "require": {
@@ -1184,7 +1184,7 @@
             "ramsey/uuid": "^3.0.0",
             "symfony/console": "*"
         },
-        "time": "2017-07-14 12:00:36",
+        "time": "2017-07-15 10:06:04",
         "type": "neos-package",
         "installation-source": "dist",
         "autoload": {
