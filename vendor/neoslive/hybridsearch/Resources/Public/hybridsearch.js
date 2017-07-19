@@ -3635,11 +3635,13 @@
 
                         querysegment = this.getEmoijQuery(querysegment);
 
+
+
                         if (querysegment.indexOf(".") && querysegment.substr(-1, 1) !== '.' && isNaN(querysegment.substr(0, 1)) === false) {
                             return String(querysegment).replace(/\./g, "").toUpperCase();
                         }
 
-                        var m = metaphone(querysegment.toLowerCase(), 6).toUpperCase().replace(/\./g, "");
+                        var m = metaphone(querysegment).toUpperCase().replace(/\./g, "");
 
                         return m.length > 0 ? m : null;
 
@@ -3668,8 +3670,6 @@
                         if (!q) {
                             return self;
                         }
-                        var qf = self.getMetaphone(querysegment.substr(0, 3));
-                        var qfallback = qf ? "000" + qf : null;
 
                         instance.$$data.running++;
 
@@ -3678,14 +3678,6 @@
                         ref.http = (hybridsearch.$$conf.cdnDatabaseURL == undefined ? hybridsearch.$$conf.databaseURL : hybridsearch.$$conf.cdnDatabaseURL) + ("/sites/" + hybridsearch.$$conf.site + "/" + "keywords/" + hybridsearch.$$conf.workspace + "/" + hybridsearch.$$conf.branch + "/" + hybridsearch.$$conf.dimension + "/" + q + ".json");
 
                         instance.$$data.keywords.push({term: q, metaphone: q});
-
-                        if (qfallback) {
-                            ref.socketAutocomplete = hybridsearch.$firebase().database().ref("sites/" + hybridsearch.$$conf.site + "/" + "keywords/" + hybridsearch.$$conf.workspace + "/" + hybridsearch.$$conf.branch + "/" + hybridsearch.$$conf.dimension + "/" + qfallback);
-                            ref.socketAutocomplete.once("value", function (data) {
-                                self.setAutocomplete(data.val(), querysegment);
-                            });
-                        }
-
 
                         ref.socket.once("value", function (data) {
                             if (data.val()) {
@@ -11148,11 +11140,71 @@ Object.defineProperty(Object.prototype, 'getRecursiveStrings', {
 }(window);
 
 
+function metaphone(str) {
+    //  discuss at: http://locutus.io/php/soundex/
+    // original by: Jonas Raoni Soares Silva (http://www.jsfromhell.com)
+    // original by: Arnout Kazemier (http://www.3rd-Eden.com)
+    // improved by: Jack
+    // improved by: Kevin van Zonneveld (http://kvz.io)
+    // bugfixed by: Onno Marsman (https://twitter.com/onnomarsman)
+    // bugfixed by: Kevin van Zonneveld (http://kvz.io)
+    //    input by: Brett Zamir (http://brett-zamir.me)
+    //  revised by: Rafał Kukawski (http://blog.kukawski.pl)
+    //   example 1: soundex('Kevin')
+    //   returns 1: 'K150'
+    //   example 2: soundex('Ellery')
+    //   returns 2: 'E460'
+    //   example 3: soundex('Euler')
+    //   returns 3: 'E460'
+    str = (str + '').toUpperCase()
+    if (!str) {
+        return ''
+    }
+    var sdx = [0, 0, 0, 0]
+    var m = {
+        B: 1,
+        F: 1,
+        P: 1,
+        V: 1,
+        C: 2,
+        G: 2,
+        J: 2,
+        K: 2,
+        Q: 2,
+        S: 2,
+        X: 2,
+        Z: 2,
+        D: 3,
+        T: 3,
+        L: 4,
+        M: 5,
+        N: 5,
+        R: 6
+    }
+    var i = 0
+    var j
+    var s = 0
+    var c
+    var p
+    while ((c = str.charAt(i++)) && s < 4) {
+        if ((j = m[c])) {
+            if (j !== p) {
+                sdx[s++] = p = j
+            }
+        } else {
+            s += i === 1
+            p = 0
+        }
+    }
+    sdx[0] = str.charAt(0)
+    return sdx.join('')
+}
+
 /*
  https://github.com/kvz/locutus
  */
 
-function metaphone(word, maxPhonemes) {
+function metaphone_metaphone(word, maxPhonemes) {
     //  discuss at: http://locutus.io/php/metaphone/
     // original by: Greg Frazier
     // improved by: Brett Zamir (http://brett-zamir.me)

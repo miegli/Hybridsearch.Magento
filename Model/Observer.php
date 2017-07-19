@@ -33,7 +33,7 @@ class Hybridsearch_Magento_Model_Observer extends SearchIndexFactory
         mkdir($this->temporaryDirectory, 0755, true);
         $this->additionalAttributeData = explode(",", Mage::getStoreConfig('magento/info/additionAttributeData'));
         $this->isrealtime = Mage::getStoreConfig('magento/info/realtime') == "1" ? true : false;
-        $this->imagebaseurl = Mage::getStoreConfig('magento/info/imagebaseurl')."/";
+        $this->imagebaseurl = Mage::getStoreConfig('magento/info/imagebaseurl');
         $this->corehelper = Mage::helper('core');
         $this->imagehelper = Mage::helper('catalog/image');
         $this->branch = "master";

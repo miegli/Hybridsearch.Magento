@@ -283,7 +283,6 @@ class SearchIndexFactory
      */
     protected $firebase;
 
-
     /**
      * @var boolean
      */
@@ -292,19 +291,12 @@ class SearchIndexFactory
     /**
      * @var array
      */
-    protected $nodeProceeded = [];
-
-    /**
-     * @var array
-     */
     protected $nodeTypeConfiguration = [];
-
 
     /**
      * @var array
      */
     protected $renderedcache = [];
-
 
     /**
      * @var integer
@@ -649,11 +641,11 @@ class SearchIndexFactory
 
         $this->creatingFullIndex = true;
 
+        $this->switchBranch($workspacename);
 
         foreach ($this->siteRepository->findAll() as $site) {
             $this->site = $site;
             array_push($this->allSiteKeys, $this->getSiteIdentifier());
-            $this->switchBranch($workspacename);
             array_push($sites, $this->getSiteIdentifier());
         }
 
@@ -1025,6 +1017,8 @@ class SearchIndexFactory
 
         $config = $nodedata->getNodeType()->getConfiguration('hybridsearch');
 
+
+
         if (isset($config['skip']) && $config['skip'] == true) {
             return $counter;
         }
@@ -1055,12 +1049,12 @@ class SearchIndexFactory
                     if (isset($this->settings['Filter']['NodeTypeFilter'])) {
 
                         $flowQuery = new FlowQuery(array($node));
-
                         if ($node->isHidden() || $node->isRemoved() || $flowQuery->context(array('invisibleContentShown' => true))->parents('[instanceof Neos.Neos:Node][_hidden=TRUE]')->count() !== 0 || $flowQuery->context(array('invisibleContentShown' => true))->parents('[instanceof Neos.Neos:Node][_visible=FALSE]')->count() !== 0) {
                             if ($this->creatingFullIndex !== true) {
                                 $this->removeSingleIndex($node->getIdentifier(), $this->getWorkspaceHash($workspace), $this->branch, $this->getDimensionConfiugurationHash($dimensionConfiguration), array(), null, $this->getNodeTypeName($node));
                             }
                         } else {
+
                             $this->generateSingleIndex($node, $workspace, $this->getDimensionConfiugurationHash($node->getContext()->getDimensions()));
                             $counter++;
                         }
@@ -1303,23 +1297,26 @@ class SearchIndexFactory
         $workspaceHash = $this->getWorkspaceHash($workspace);
 
 
-        if (isset($this->index->$workspaceHash) === false) {
+        if (property_exists($this->index,$workspaceHash) === false) {
             $this->index->$workspaceHash = new \stdClass();
         }
 
-        if (isset($this->index->$workspaceHash->$dimensionConfigurationHash) === false) {
+        if (property_exists($this->index->$workspaceHash,$dimensionConfigurationHash) === false) {
             $this->index->$workspaceHash->$dimensionConfigurationHash = new \stdClass();
         }
 
 
-        if (isset($this->keywords->$workspaceHash) === false) {
+        if (property_exists($this->keywords,$workspaceHash) === false) {
             $this->keywords->$workspaceHash = new \stdClass();
         }
 
-        if (isset($this->keywords->$workspaceHash->$dimensionConfigurationHash) === false) {
-            $this->keywords->$workspaceHash->$dimensionConfigurationHash = array();
+        if (property_exists($this->keywords->$workspaceHash,$dimensionConfigurationHash) === false) {
+            $this->keywords->$workspaceHash->$dimensionConfigurationHash = new \stdClass();
         }
 
+        if (property_exists($this->index->$workspaceHash->$dimensionConfigurationHash,'___keywords') === false) {
+            $this->index->$workspaceHash->$dimensionConfigurationHash->___keywords = new \stdClass();
+        }
 
         $indexData = $this->convertNodeToSearchIndexResult($node);
 
@@ -1334,6 +1331,8 @@ class SearchIndexFactory
 
 
         $identifier = $indexData->identifier;
+
+
 
         if (!$identifier) {
             return null;
@@ -1350,9 +1349,10 @@ class SearchIndexFactory
 
         $keywordsOfNode = array();
 
+
         foreach ($keywords as $keyword => $val) {
 
-            $k = strval($keyword);
+            $k = (string)$keyword;
 
 
             if (substr($k, 0, 2) !== "__") {
@@ -1364,25 +1364,22 @@ class SearchIndexFactory
             }
 
             if ($k && substr_count($keyword, "-") < 3 && substr_count($keyword, "_") == 0) {
-                if (isset($this->keywords->$workspaceHash->$dimensionConfigurationHash[$k]) == false) {
-                    $this->keywords->$workspaceHash->$dimensionConfigurationHash[$k] = array();
-                }
                 if (is_array($val) == false) {
                     $val = array($k);
                 }
                 foreach ($val as $kek => $vev) {
-                    $this->keywords->$workspaceHash->$dimensionConfigurationHash[$k][$kek] = $vev;
+                    if (property_exists($this->keywords->$workspaceHash->$dimensionConfigurationHash,$k) === false) {
+                        $this->keywords->$workspaceHash->$dimensionConfigurationHash->$k = new \stdClass();
+                    }
+                    $this->keywords->$workspaceHash->$dimensionConfigurationHash->$k->$kek = $vev;
                 }
 
             }
 
 
-            if (isset($this->index->$workspaceHash->$dimensionConfigurationHash->$k) === false) {
+            if (property_exists($this->index->$workspaceHash->$dimensionConfigurationHash,$k) === false) {
                 $this->index->$workspaceHash->$dimensionConfigurationHash->$k = new \stdClass();
-            } else {
-
             }
-
 
             $this->index->$workspaceHash->$dimensionConfigurationHash->$k->$identifier = new \stdClass();
             $this->index->$workspaceHash->$dimensionConfigurationHash->$k->$identifier->nodeType = $indexData->nodeType;
@@ -1394,9 +1391,7 @@ class SearchIndexFactory
 
         }
 
-        if (isset($this->index->$workspaceHash->$dimensionConfigurationHash->___keywords) === false) {
-            $this->index->$workspaceHash->$dimensionConfigurationHash->___keywords = new \stdClass();
-        }
+
 
         $this->index->$workspaceHash->$dimensionConfigurationHash->___keywords->$identifier = $keywordsOfNode;
 
@@ -1413,12 +1408,11 @@ class SearchIndexFactory
         unset($indexData);
         unset($keywords);
 
-        if ($this->counter > 500) {
+        if ($this->counter > 5000) {
             $this->counter = 0;
             $this->save();
         };
         $this->counter++;
-
 
     }
 
@@ -1471,6 +1465,8 @@ class SearchIndexFactory
         $words = explode(" ", ($text));
 
 
+
+
         // reduce
         $wordsReduced = array();
 
@@ -1488,14 +1484,8 @@ class SearchIndexFactory
                 } else {
 
                     $wm = $this->getMetaphone($w);
-                    $w = str_replace(".", "", $w);
                     if (strlen($wm) > 0 && strlen($wm) < 64) {
                         $wordsReduced[$wm][$w] = 1;
-                        $wm = $this->getMetaphone(mb_substr($w, 0, 3));
-                        if (strlen($wm) > 0) {
-                            $wordsReduced["000" . $wm][$w] = 1;
-                        }
-
                     }
                 }
 
@@ -1504,16 +1494,13 @@ class SearchIndexFactory
 
         foreach ($wordsReduced as $w => $k) {
             if (strlen($w) > 0) {
-                if ($w) {
-                    $keywords->$w = $k;
-                }
-            }
+                 $keywords->$w = $k;
+             }
         }
 
 
         $properties = null;
         unset($properties);
-
 
         return $keywords;
 
@@ -1532,7 +1519,7 @@ class SearchIndexFactory
             return mb_strtoupper(str_replace(".", "", $string));
         }
 
-        return str_replace(".", "", mb_strtoupper(metaphone(mb_strtolower($string), 6)));
+        return soundex($string);
 
 
     }
@@ -1688,7 +1675,7 @@ class SearchIndexFactory
         $grandParentNode = $flowQuery->closest($grandParentNodeFilter)->get(0);
         $documentNode = $flowQuery->closest("[instanceof Neos.Neos:Document]")->get(0);
 
-        if (isset($properties->label) == false && $node->getParent()) {
+        if (property_exists($properties,'label') == false && $node->getParent()) {
             $prev = $flowQuery->prev()->get(0);
             if ($prev) {
                 if (strlen($prev->getLabel()) < 64) {
@@ -1700,7 +1687,7 @@ class SearchIndexFactory
 
         }
 
-        if (isset($properties->label) == false) {
+        if (property_exists($properties,'label') == false) {
             if ($parentNode) {
                 $properties->label = $parentNode->getLabel();
             }
@@ -1717,7 +1704,7 @@ class SearchIndexFactory
         $breadcrumb = '';
 
         $urlproperty = mb_strtolower(preg_replace("/[^A-z0-9]/", "-", $node->getNodeType()->getName() . ":url"));
-        if (isset($properties->$urlproperty)) {
+        if (property_exists($properties,$urlproperty)) {
             $uri = trim($properties->$urlproperty);
         }
         if ($node->hasProperty('url') && $this->mb_parse_url($node->getProperty('url')) !== false) {
@@ -1993,15 +1980,13 @@ class SearchIndexFactory
     function addToQueue($path, $data = null, $method = 'update', $chunkcounter = 0)
     {
 
-
-        if ($chunkcounter < 100 && count($data) > 2 && strlen(json_encode($data)) > 5000000) {
+        if ($chunkcounter < 20 && gettype($data) == 'array' && strlen(json_encode($data)) > 1000000) {
             $chunkcounter++;
             $this->addToQueue($path, array_slice($data, 0, ceil(count($data) / 2)), $method, $chunkcounter);
-            $this->addToQueue($path, array_slice($data, floor(count($data) / 2)), $method, $chunkcounter);
+            $this->addToQueue($path, array_slice($data, -1*floor(count($data) / 2)), $method, $chunkcounter);
             unset($data);
             return true;
         } else {
-
 
             $filename = $this->temporaryDirectory . "/queued_" . time() . $this->queuecounter . "_" . Uuid::uuid1() . ".json";
 
@@ -2137,7 +2122,7 @@ class SearchIndexFactory
             }
 
 
-            ksort($files);
+            krsort($files);
 
             if (count($files)) {
                 $this->output->progressStart($filesize);
@@ -2152,7 +2137,7 @@ class SearchIndexFactory
                     $count++;
 
 
-                    $content = json_decode(file_get_contents($file));
+                    $content = json_decode(file_get_contents($file), true);
 
                     if ($content) {
 
@@ -2160,24 +2145,20 @@ class SearchIndexFactory
                         $out = "";
 
 
-                        switch ($content->method) {
+                        switch ($content['method']) {
                             case 'update':
-                                if (count($content->data)) {
-                                    $out = $this->firebase->update($content->path, $content->data, array('print' => 'silent'));
-                                }
+                                $out = $this->firebase->update($content['path'], $content['data'], array('print' => 'silent'));
                                 break;
 
                             case 'delete':
-                                $out = $this->firebase->delete($content->path, array('print' => 'silent'));
+                                $out = $this->firebase->delete($content['path'], array('print' => 'silent'));
                                 break;
 
                             case 'set':
-                                if (count($content->data)) {
-                                    $out = $this->firebase->set($content->path, $content->data, array('print' => 'silent'));
-                                }
+                                $out = $this->firebase->set($content['path'], $content['data'], array('print' => 'silent'));
+
                                 break;
                         }
-
 
                         $this->output->progressAdvance(floor(filesize($file) / 2));
 
@@ -2187,7 +2168,6 @@ class SearchIndexFactory
                         } else {
                             unlink($file);
                         }
-
 
                     }
 
@@ -2299,10 +2279,14 @@ class SearchIndexFactory
     {
 
 
+        $patchUpdate = array();
+        $branch = $this->branch;
+
+
+
         foreach ($this->index as $workspace => $workspaceData) {
             foreach ($workspaceData as $dimension => $dimensionData) {
                 $patch = new \stdClass();
-                $patchUpdate = array();
 
 
                 if ($this->creatingFullIndex) {
@@ -2311,6 +2295,7 @@ class SearchIndexFactory
                         $this->setBranch($workspace, $this->branch);
                         $this->branchWasSet = true;
                     }
+
                     $ncount = count(get_object_vars($this->nodetypes));
                     if ($this->nodetypesCounter < $ncount) {
                         $this->firebaseSet("sites/" . $this->getSiteIdentifier() . "/nodetypes/" . $workspace . "/" . $this->branch . "/" . $dimension, $this->nodetypes);
@@ -2324,14 +2309,16 @@ class SearchIndexFactory
                         foreach ($dimensionIndexDataAll as $dimensionIndexDataAllKey => $dimensionIndexDataAllVal) {
                             if (substr($dimensionIndex, 0, 3) != '000') {
 
-                                if (isset($patch->$dimensionIndex) == false) {
+                                if (property_exists($patch,$dimensionIndex) == false) {
                                     $patch->$dimensionIndex = new \stdClass();
                                 }
-                                if (isset($patch->$dimensionIndex->$dimensionIndexKey) == false) {
+                                if (property_exists($patch->$dimensionIndex,$dimensionIndexKey) == false) {
                                     $patch->$dimensionIndex->$dimensionIndexKey = new \stdClass();
                                 }
 
-                                $patchUpdate["$dimensionIndex/$dimensionIndexKey/$dimensionIndexDataAllKey"] = $dimensionIndexDataAllVal;
+                                if ($dimensionIndexDataAllVal) {
+                                    $patchUpdate["sites/" . $this->getSiteIdentifier() . "/index/" . $workspace . "/" . $this->branch . "/" . $dimension . "/$dimensionIndex/$dimensionIndexKey/$dimensionIndexDataAllKey"] = $dimensionIndexDataAllVal;
+                                }
 
                             }
                         }
@@ -2339,48 +2326,37 @@ class SearchIndexFactory
                     }
                 }
 
-
-                if ($this->creatingFullIndex) {
-                    $this->firebaseUpdate("sites/" . $this->getSiteIdentifier() . "/index/" . $workspace . "/" . $this->branch . "/" . $dimension, $patchUpdate);
-
-                } else {
-                    if ($directpush) {
-                        $this->firebase->update("sites/" . $this->getSiteIdentifier() . "/index/" . $workspace . "/" . $this->branch . "/" . $dimension, $patchUpdate, array('print' => 'silent'));
-                    } else {
-                        $this->firebaseUpdate("sites/" . $this->getSiteIdentifier() . "/index/" . $workspace . "/" . $this->branch . "/" . $dimension, $patchUpdate);
-                    }
-                }
             }
         }
-
-        $branch = $this->branch;
         foreach ($this->keywords as $workspace => $workspaceData) {
 
             $patch = new \stdClass();
-            $patchUpdate = array();
+
 
             foreach ($workspaceData as $dimensionIndex => $dimensionIndexData) {
                 foreach ($dimensionIndexData as $dimensionIndexKey => $dimensionIndexDataAll) {
                     foreach ($dimensionIndexDataAll as $dimensionIndexDataAllKey => $dimensionIndexDataAllVal) {
 
-                        if (isset($patch->$workspace) == false) {
+                        if (property_exists($patch,$workspace) == false) {
                             $patch->$workspace = new \stdClass();
                         }
 
-                        if (isset($patch->$workspace->$branch) == false) {
+                        if (property_exists($patch->$workspace,$branch) == false) {
                             $patch->$workspace->$branch = new \stdClass();
                         }
-                        if (isset($patch->$workspace->$branch->$dimensionIndex) == false) {
+                        if (property_exists($patch->$workspace->$branch,$dimensionIndex) == false) {
                             $patch->$workspace->$branch->$dimensionIndex = new \stdClass();
                         }
-                        if (isset($patch->$workspace->$branch->$dimensionIndex->$dimensionIndexKey) == false) {
+                        if (property_exists($patch->$workspace->$branch->$dimensionIndex,$dimensionIndexKey) == false) {
                             $patch->$workspace->$branch->$dimensionIndex->$dimensionIndexKey = new \stdClass();
                         }
-                        if (isset($patch->$workspace->$branch->$dimensionIndex->$dimensionIndexKey->$dimensionIndexDataAllKey) == false) {
+                        if (property_exists($patch->$workspace->$branch->$dimensionIndex->$dimensionIndexKey,$dimensionIndexDataAllKey) == false) {
                             $patch->$workspace->$branch->$dimensionIndex->$dimensionIndexKey->$dimensionIndexDataAllKey = new \stdClass();
                         }
 
-                        $patchUpdate["$workspace/$branch/$dimensionIndex/$dimensionIndexKey/$dimensionIndexDataAllKey"] = $dimensionIndexDataAllVal;
+                        if ($dimensionIndexDataAllVal) {
+                            $patchUpdate["sites/" . $this->getSiteIdentifier() . "/keywords/$workspace/$branch/$dimensionIndex/$dimensionIndexKey/$dimensionIndexDataAllKey"] = $dimensionIndexDataAllVal;
+                        }
 
 
                     }
@@ -2390,30 +2366,19 @@ class SearchIndexFactory
             }
 
 
-            if ($this->creatingFullIndex) {
-
-                $this->firebaseUpdate("sites/" . $this->getSiteIdentifier() . "/keywords/", $patchUpdate);
-
-            } else {
-                if ($directpush) {
-
-                    $this->firebase->update("sites/" . $this->getSiteIdentifier() . "/keywords/", $patchUpdate, array('print' => 'silent'));
-
-                } else {
-
-                    $this->firebaseUpdate("sites/" . $this->getSiteIdentifier() . "/keywords/", $patchUpdate);
-
-                }
-
-            }
-
-
         }
 
 
-        $this->index = null;
-        $this->keywords = null;
-        $path = null;
+        if ($this->creatingFullIndex) {
+            $this->firebaseUpdate("", $patchUpdate);
+        } else {
+            if ($directpush) {
+                $this->firebase->update("", $patchUpdate, array('print' => 'silent'));
+            } else {
+                $this->firebaseUpdate("", $patchUpdate);
+            }
+
+        }
 
         unset($this->index);
         unset($this->keywords);

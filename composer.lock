@@ -162,16 +162,16 @@
         },
         {
             "name": "google/apiclient-services",
-            "version": "v0.14",
+            "version": "v0.15",
             "source": {
                 "type": "git",
                 "url": "https://github.com/google/google-api-php-client-services.git",
-                "reference": "b8c3ee8adab9eaffc3825cabc12740ad6e2ed76f"
+                "reference": "9eaaa1062fa2a7cd2d16d3b5ab39efc0bc02a37e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/google/google-api-php-client-services/zipball/b8c3ee8adab9eaffc3825cabc12740ad6e2ed76f",
-                "reference": "b8c3ee8adab9eaffc3825cabc12740ad6e2ed76f",
+                "url": "https://api.github.com/repos/google/google-api-php-client-services/zipball/9eaaa1062fa2a7cd2d16d3b5ab39efc0bc02a37e",
+                "reference": "9eaaa1062fa2a7cd2d16d3b5ab39efc0bc02a37e",
                 "shasum": ""
             },
             "require": {
@@ -195,7 +195,7 @@
             "keywords": [
                 "google"
             ],
-            "time": "2017-07-10 00:18:15"
+            "time": "2017-07-13 19:18:11"
         },
         {
             "name": "google/auth",
@@ -582,16 +582,16 @@
         },
         {
             "name": "neoslive/hybridsearch",
-            "version": "1.1.34",
+            "version": "1.1.37",
             "source": {
                 "type": "git",
                 "url": "https://github.com/miegli/Neoslive.Hybridsearch.git",
-                "reference": "1fa447e5575fbd2f1fd6752353971c2e50338925"
+                "reference": "25ef6c0d4c67583258800b83e9183048301deff6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/miegli/Neoslive.Hybridsearch/zipball/1fa447e5575fbd2f1fd6752353971c2e50338925",
-                "reference": "1fa447e5575fbd2f1fd6752353971c2e50338925",
+                "url": "https://api.github.com/repos/miegli/Neoslive.Hybridsearch/zipball/25ef6c0d4c67583258800b83e9183048301deff6",
+                "reference": "25ef6c0d4c67583258800b83e9183048301deff6",
                 "shasum": ""
             },
             "require": {
@@ -610,7 +610,7 @@
             },
             "notification-url": "https://packagist.org/downloads/",
             "description": "Add description here",
-            "time": "2017-07-15 20:16:56"
+            "time": "2017-07-19 13:37:34"
         },
         {
             "name": "paragonie/random_compat",
@@ -979,7 +979,7 @@
         },
         {
             "name": "symfony/console",
-            "version": "v3.3.4",
+            "version": "v3.3.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/console.git",
@@ -1048,7 +1048,7 @@
         },
         {
             "name": "symfony/debug",
-            "version": "v3.3.4",
+            "version": "v3.3.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/debug.git",
